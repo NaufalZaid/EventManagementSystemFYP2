@@ -35,37 +35,55 @@ class EventScheduleController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'event_id' => 'required|exists:events,id',
-            'venue_id' => 'required|exists:venues,id',
-            'timeslot_id' => 'required|exists:timeslots,id',
-            'status' => 'required|string|max:50',
-        ]);
-
-        $venueConflict = EventSchedule::where('venue_id', $validated['venue_id'])
-            ->where('timeslot_id', $validated['timeslot_id'])
-            ->exists();
-
-        if ($venueConflict) {
-            return back()
-                ->withErrors(['venue_id' => 'This venue is already booked for the selected timeslot.'])
-                ->withInput();
-        }
-
-        $eventConflict = EventSchedule::where('event_id', $validated['event_id'])->exists();
-
-        if ($eventConflict) {
-            return back()
-                ->withErrors(['event_id' => 'This event has already been scheduled.'])
-                ->withInput();
-        }
-
-        EventSchedule::create($validated);
-
-        return redirect()->route('schedules.index')->with('success', 'Schedule created successfully.'); //
-    }
+     public function store(Request $request)
+     {
+         $validated = $request->validate([
+             'event_id' => 'required|exists:events,id',
+             'venue_id' => 'required|exists:venues,id',
+             'timeslot_id' => 'required|exists:timeslots,id',
+             'status' => 'required|string|max:50',
+         ]);
+     
+         $event = Event::findOrFail($validated['event_id']);
+         $venue = Venue::findOrFail($validated['venue_id']);
+         $timeslot = Timeslot::findOrFail($validated['timeslot_id']);
+     
+         if ($event->capacity > $venue->capacity) {
+             return back()
+                 ->withErrors(['venue_id' => 'Selected venue capacity is too small for this event.'])
+                 ->withInput();
+         }
+     
+         $eventConflict = EventSchedule::where('event_id', $validated['event_id'])->exists();
+     
+         if ($eventConflict) {
+             return back()
+                 ->withErrors(['event_id' => 'This event has already been scheduled.'])
+                 ->withInput();
+         }
+     
+         $existingSchedules = EventSchedule::with('timeslot')
+             ->where('venue_id', $validated['venue_id'])
+             ->get();
+     
+         foreach ($existingSchedules as $schedule) {
+             $existing = $schedule->timeslot;
+     
+             $sameDate = $existing->slot_date === $timeslot->slot_date;
+             $overlap = $timeslot->start_time < $existing->end_time
+                 && $timeslot->end_time > $existing->start_time;
+     
+             if ($sameDate && $overlap) {
+                 return back()
+                     ->withErrors(['venue_id' => 'This venue already has another event during the selected time range.'])
+                     ->withInput();
+             }
+         }
+     
+         EventSchedule::create($validated);
+     
+         return redirect()->route('schedules.index')->with('success', 'Schedule created successfully.');
+     }
 
     /**
      * Display the specified resource.
@@ -90,40 +108,58 @@ class EventScheduleController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, EventSchedule $schedule)
-    {
-        $validated = $request->validate([
-            'event_id' => 'required|exists:events,id',
-            'venue_id' => 'required|exists:venues,id',
-            'timeslot_id' => 'required|exists:timeslots,id',
-            'status' => 'required|string|max:50',
-        ]);
-
-        $venueConflict = EventSchedule::where('venue_id', $validated['venue_id'])
-            ->where('timeslot_id', $validated['timeslot_id'])
-            ->where('id', '!=', $schedule->id)
-            ->exists();
-
-        if ($venueConflict) {
-            return back()
-                ->withErrors(['venue_id' => 'This venue is already booked for the selected timeslot.'])
-                ->withInput();
-        }
-
-        $eventConflict = EventSchedule::where('event_id', $validated['event_id'])
-            ->where('id', '!=', $schedule->id)
-            ->exists();
-
-        if ($eventConflict) {
-            return back()
-                ->withErrors(['event_id' => 'This event has already been scheduled.'])
-                ->withInput();
-        }
-
-        $schedule->update($validated);
-
-        return redirect()->route('schedules.index')->with('success', 'Schedule updated successfully.'); //
-    }
+     public function update(Request $request, EventSchedule $schedule)
+     {
+         $validated = $request->validate([
+             'event_id' => 'required|exists:events,id',
+             'venue_id' => 'required|exists:venues,id',
+             'timeslot_id' => 'required|exists:timeslots,id',
+             'status' => 'required|string|max:50',
+         ]);
+     
+         $event = Event::findOrFail($validated['event_id']);
+         $venue = Venue::findOrFail($validated['venue_id']);
+         $timeslot = Timeslot::findOrFail($validated['timeslot_id']);
+     
+         if ($event->capacity > $venue->capacity) {
+             return back()
+                 ->withErrors(['venue_id' => 'Selected venue capacity is too small for this event.'])
+                 ->withInput();
+         }
+     
+         $eventConflict = EventSchedule::where('event_id', $validated['event_id'])
+             ->where('id', '!=', $schedule->id)
+             ->exists();
+     
+         if ($eventConflict) {
+             return back()
+                 ->withErrors(['event_id' => 'This event has already been scheduled.'])
+                 ->withInput();
+         }
+     
+         $existingSchedules = EventSchedule::with('timeslot')
+             ->where('venue_id', $validated['venue_id'])
+             ->where('id', '!=', $schedule->id)
+             ->get();
+     
+         foreach ($existingSchedules as $existingSchedule) {
+             $existing = $existingSchedule->timeslot;
+     
+             $sameDate = $existing->slot_date === $timeslot->slot_date;
+             $overlap = $timeslot->start_time < $existing->end_time
+                 && $timeslot->end_time > $existing->start_time;
+     
+             if ($sameDate && $overlap) {
+                 return back()
+                     ->withErrors(['venue_id' => 'This venue already has another event during the selected time range.'])
+                     ->withInput();
+             }
+         }
+     
+         $schedule->update($validated);
+     
+         return redirect()->route('schedules.index')->with('success', 'Schedule updated successfully.');
+     }
 
     /**
      * Remove the specified resource from storage.

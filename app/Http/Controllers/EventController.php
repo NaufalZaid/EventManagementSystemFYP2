@@ -34,11 +34,8 @@ class EventController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'event_date' => 'required|date',
-            'start_time' => 'required',
-            'end_time' => 'required|after:start_time',
-            'location' => 'nullable|string|max:255',
             'capacity' => 'required|integer|min:0',
+            'duration_minutes' => 'nullable|integer|min:1',
         ]);
     
         Event::create($validated);
@@ -57,17 +54,26 @@ class EventController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(Event $event)
     {
-        //
+        return view('events.edit', compact('event'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Event $event)
     {
-        //
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'capacity' => 'required|integer|min:0',
+            'duration_minutes' => 'nullable|integer|min:1',
+        ]);
+    
+        $event->update($validated);
+    
+        return redirect()->route('events.index')->with('success', 'Event updated successfully.');
     }
 
     /**

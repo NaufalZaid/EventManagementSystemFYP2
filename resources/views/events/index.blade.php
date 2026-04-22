@@ -19,20 +19,22 @@
             <thead>
                 <tr>
                     <th>Title</th>
-                    <th>Date</th>
-                    <th>Time</th>
-                    <th>Location</th>
+                    <th>Description</th>
                     <th>Capacity</th>
+                    <th>Duration (minutes)</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach ($events as $event)
                     <tr>
                         <td>{{ $event->title }}</td>
-                        <td>{{ $event->event_date }}</td>
-                        <td>{{ $event->start_time }} - {{ $event->end_time }}</td>
-                        <td>{{ $event->location }}</td>
+                        <td>{{ $event->description }}</td>
                         <td>{{ $event->capacity }}</td>
+                        <td>{{ $event->duration_minutes }}</td>
+                        <td>
+                            <a href="{{ route('events.edit', $event) }}">Edit</a>
+                        </td>
                     </tr>
                 @endforeach
             </tbody>
