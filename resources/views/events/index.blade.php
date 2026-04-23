@@ -34,6 +34,12 @@
                         <td>{{ $event->duration_minutes }}</td>
                         <td>
                             <a href="{{ route('events.edit', $event) }}">Edit</a>
+            
+                            <form action="{{ route('events.destroy', $event) }}" method="POST" style="display:inline;">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" onclick="return confirm('Delete this event?')">Delete</button>
+                            </form>
                         </td>
                     </tr>
                 @endforeach
