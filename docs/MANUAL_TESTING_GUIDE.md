@@ -1,6 +1,6 @@
 # Manual End-to-End Testing Guide
 
-This guide verifies the Event Management System from the perspective of guests, students, event organizers, and administrators. It covers the main success paths, cross-role handoffs, validation failures, access control, reporting, the Genetic Algorithm (GA), and evaluation evidence.
+This guide verifies the Event Management System from the perspective of guests, students, event organizers, and administrators. It covers the main success paths, cross-role handoffs, validation failures, access control, reporting, the Genetic Algorithm (GA), performance testing, and user feedback.
 
 ## 1. Test objective
 
@@ -11,7 +11,7 @@ Confirm that:
 - venue, capacity, duration, blackout, overlap, and personal-calendar conflicts are prevented;
 - student registration, notifications, attendance, and reporting remain consistent;
 - GA results can be reviewed and applied safely; and
-- evaluation evidence can be collected and exported.
+- operational reports, performance results, and user feedback can be collected and reviewed.
 
 Use this result notation while testing:
 
@@ -56,13 +56,13 @@ Open `http://127.0.0.1:8000`.
 php artisan migrate:fresh --seed
 ```
 
-To preserve existing records and only ensure that demonstration accounts exist, run:
+To preserve existing records and only ensure that the seeded test accounts exist, run:
 
 ```bash
 php artisan db:seed
 ```
 
-### Demonstration accounts
+### Seeded test accounts
 
 All seeded accounts use the password `password`.
 
@@ -86,7 +86,7 @@ Choose future dates so registration, calendars, reminders, and GA eligibility be
 | Morning slot | A future date, 09:00–11:00 |
 | Overlap slot | Same date, 10:00–12:00 |
 | Afternoon slot | Same or another future date, 14:00–16:00 |
-| Primary event | FYP Test Workshop, capacity 80, duration 60 minutes |
+| Primary event | UAT Test Workshop, capacity 80, duration 60 minutes |
 | Oversized event | Capacity 150, duration 60 minutes |
 | Long event | Capacity 50, duration 180 minutes |
 
@@ -105,7 +105,7 @@ Run this scenario first. It gives later tests a published event, registration, n
 ### B. Organizer creates and submits an event
 
 - [ ] `E2E-04` Sign in as `organizer@example.com` and open **Events**.
-- [ ] `E2E-05` Create **FYP Test Workshop** with type `Workshop`, committee `FYP Test Team`, capacity `80`, duration `60`, a description, and optional optimizer preferences.
+- [ ] `E2E-05` Create **UAT Test Workshop** with type `Workshop`, committee `UAT Test Team`, capacity `80`, duration `60`, a description, and optional optimizer preferences.
   - Expected: the event is saved as a draft and belongs to the organizer.
 - [ ] `E2E-06` Edit the draft and confirm the changes persist.
 - [ ] `E2E-07` Submit the event for review.
@@ -113,7 +113,7 @@ Run this scenario first. It gives later tests a published event, registration, n
 
 ### C. Administrator reviews the proposal
 
-- [ ] `E2E-08` As administrator, open **Proposals** and locate **FYP Test Workshop**.
+- [ ] `E2E-08` As administrator, open **Proposals** and locate **UAT Test Workshop**.
 - [ ] `E2E-09` Reject it once with a clear reason such as `Please clarify the event description.`
   - Expected: status becomes **Rejected** and the reason is visible to the organizer.
 - [ ] `E2E-10` As organizer, edit the rejected event and submit it again.
@@ -133,12 +133,12 @@ Run this scenario first. It gives later tests a published event, registration, n
 
 ### E. Administrator publishes the event
 
-- [ ] `E2E-16` As administrator, open **Events** and publish **FYP Test Workshop**.
+- [ ] `E2E-16` As administrator, open **Events** and publish **UAT Test Workshop**.
   - Expected: status becomes **Published** and the event appears in student discovery.
 
 ### F. Student registers
 
-- [ ] `E2E-17` As `student@example.com`, open **Discover** and search for `FYP Test Workshop`.
+- [ ] `E2E-17` As `student@example.com`, open **Discover** and search for `UAT Test Workshop`.
   - Expected: the published event appears with its schedule and availability.
 - [ ] `E2E-18` Open the event details and register.
   - Expected: confirmation appears and the event is present in **My Events** and **Calendar**.
@@ -168,15 +168,15 @@ Run this scenario first. It gives later tests a published event, registration, n
 - [ ] `E2E-28` As organizer, confirm the attended count increased, then close the attendance session.
   - Expected: the session becomes inactive and further check-ins are rejected.
 
-### I. Reports and evaluation
+### I. Reports and feedback
 
 - [ ] `E2E-29` As organizer, open **Analytics** and **Reports**.
   - Expected: registrations and attendance are reflected; reports show only events belonging to this organizer.
 - [ ] `E2E-30` Select a date range containing the event and download Event CSV and Venue CSV.
   - Expected: both files download, contain headers, and include the correct event/venue metrics.
-- [ ] `E2E-31` As each role, open **Evaluate System**, provide all four ratings, accept consent, and submit.
+- [ ] `E2E-31` As each role, open **Give Feedback**, provide all four ratings, accept consent, and submit.
   - Expected: each user has one saved response and can update it later.
-- [ ] `E2E-32` As administrator, open **Evaluation Results**.
+- [ ] `E2E-32` As administrator, open **Feedback Results**.
   - Expected: overall averages, role summaries, response count, and comments are visible without displaying participant identity.
 
 ## 4. Guest and authentication tests
@@ -203,10 +203,10 @@ Run this scenario first. It gives later tests a published event, registration, n
 Enter restricted URLs directly as well as checking that their navigation links are hidden.
 
 - [ ] `ROLE-01` As student, try `/events`, `/venues`, `/timeslots`, `/schedules`, `/proposals`, `/optimizer`, `/experiments`, `/reports`, and `/evaluation-results`.
-  - Expected: management routes are forbidden, while `/evaluation` is allowed.
+  - Expected: management routes are forbidden, while the feedback form at `/evaluation` is allowed.
 - [ ] `ROLE-02` As organizer, try `/venues`, `/timeslots`, `/schedules`, `/proposals`, `/optimizer`, `/experiments`, and `/evaluation-results`.
-  - Expected: administrator-only routes are forbidden; organizer events, venue requests, analytics, reports, and evaluation are allowed.
-- [ ] `ROLE-03` As administrator, verify access to all administrative master-data, proposal, request, schedule, optimizer, experiment, report, and evaluation-result screens.
+  - Expected: administrator-only routes are forbidden; organizer events, venue requests, analytics, reports, and the feedback form are allowed.
+- [ ] `ROLE-03` As administrator, verify access to all administrative master-data, proposal, request, schedule, optimizer, performance-test, report, and feedback-result screens.
 - [ ] `ROLE-04` While signed out, visit a protected URL directly.
   - Expected: redirect to login.
 - [ ] `ROLE-05` Attempt to edit or operate on a record owned by another user by changing its numeric URL ID.
@@ -287,19 +287,19 @@ Prepare at least two approved, unscheduled events, two active venues, and two fu
 - [ ] `ADMIN-GA-07` Submit values outside the accepted population, generation, mutation, or seed ranges.
   - Expected: validation errors appear and no run is stored.
 
-### Repeatable GA experiments
+### Repeatable GA performance tests
 
-- [ ] `ADMIN-EXP-01` Open **GA Experiments** with eligible data available.
-- [ ] `ADMIN-EXP-02` Run a named experiment with repetitions `3`, population `20`, generations `20`, mutation `0.08`, and base seed `700`.
+- [ ] `ADMIN-EXP-01` Open **GA Performance Tests** with eligible data available.
+- [ ] `ADMIN-EXP-02` Run a named performance test with repetitions `3`, population `20`, generations `20`, mutation `0.08`, and base seed `700`.
   - Expected: three trials use seeds `700`, `701`, and `702` and aggregate success rate, fitness, utilization, and runtime are saved.
-- [ ] `ADMIN-EXP-03` Open the stored experiment later.
+- [ ] `ADMIN-EXP-03` Open the saved performance test later.
   - Expected: controlled parameters, dataset IDs, aggregate metrics, and trial results remain available.
-- [ ] `ADMIN-EXP-04` Download the experiment CSV.
-  - Expected: the file includes the experiment and its aggregate metrics.
-- [ ] `ADMIN-EXP-05` Try an experiment without approved unscheduled events, active venues, or future timeslots.
-  - Expected: execution is rejected with an explanation instead of creating invalid evidence.
+- [ ] `ADMIN-EXP-04` Download the performance-results CSV.
+  - Expected: the file includes the test and its aggregate metrics.
+- [ ] `ADMIN-EXP-05` Try a performance test without approved unscheduled events, active venues, or future timeslots.
+  - Expected: execution is rejected with an explanation and no invalid result is saved.
 
-### Administrator reporting and evaluation
+### Administrator reporting and feedback
 
 - [ ] `ADMIN-REP-01` Open **Reports** and choose a valid date range.
   - Expected: events from all organizers in the period are included.
@@ -307,9 +307,9 @@ Prepare at least two approved, unscheduled events, two active venues, and two fu
   - Expected: clear empty states appear.
 - [ ] `ADMIN-REP-03` Set the `To` date earlier than `From`.
   - Expected: date validation rejects the filter.
-- [ ] `ADMIN-REP-04` Download Event, Venue, and Experiment CSV files and open them in a spreadsheet application.
+- [ ] `ADMIN-REP-04` Download Event, Venue, and GA performance-results CSV files and open them in a spreadsheet application.
   - Expected: headers and data columns align, dates/numbers are usable, and no HTML is present.
-- [ ] `ADMIN-EVAL-01` Open **Evaluation Results** before and after responses are submitted.
+- [ ] `ADMIN-EVAL-01` Open **Feedback Results** before and after responses are submitted.
   - Expected: empty/aggregate states render safely, role counts are correct, and respondent names/emails are not shown.
 
 ## 7. Organizer tests
@@ -389,7 +389,7 @@ Prepare at least two approved, unscheduled events, two active venues, and two fu
 - [ ] `STU-REG-06` Test event capacity with a capacity-one event and two student accounts.
   - Expected: the first registration succeeds and the second receives a full-capacity message.
 - [ ] `STU-REG-07` After attendance is recorded, try cancelling the registration.
-  - Expected: cancellation is rejected to preserve attendance evidence.
+  - Expected: cancellation is rejected to preserve the attendance record.
 
 ### Calendar and conflict protection
 
@@ -438,7 +438,7 @@ Prepare at least two approved, unscheduled events, two active venues, and two fu
   - Expected: duplicate attendance is rejected.
 - [ ] `STU-ATT-06` Verify **Attendance History** shows only the signed-in student’s records.
 
-### Evaluation
+### Service feedback
 
 - [ ] `STU-EVAL-01` Submit without selecting all four ratings.
   - Expected: every rating is required.
@@ -454,7 +454,7 @@ Prepare at least two approved, unscheduled events, two active venues, and two fu
   - Expected: understandable errors appear near the workflow and typed values are retained where appropriate.
 - [ ] `VAL-02` Enter values beyond maximum text lengths.
   - Expected: client/server validation rejects them safely.
-- [ ] `VAL-03` Enter HTML or script text in descriptions, notes, announcements, tasks, and evaluation comments.
+- [ ] `VAL-03` Enter HTML or script text in descriptions, notes, announcements, tasks, and feedback comments.
   - Expected: content is displayed as escaped text and does not execute.
 - [ ] `VAL-04` Double-click important submit buttons or refresh after submission.
   - Expected: database constraints and application logic prevent harmful duplicates.
@@ -484,7 +484,7 @@ Current expected application test result:
 51 passed (205 assertions)
 ```
 
-The automated suite covers authentication, authorization, ownership, proposals, venue requests, scheduling constraints, discovery, registration, personal conflicts, planning, notifications, reminders, QR/manual attendance, analytics, GA generation/application, seeded reproducibility, reports, CSV exports, and evaluation consent.
+The automated suite covers authentication, authorization, ownership, proposals, venue requests, scheduling constraints, discovery, registration, personal conflicts, planning, notifications, reminders, QR/manual attendance, analytics, GA generation/application, seeded reproducibility, reports, CSV exports, and feedback consent.
 
 ## 11. Test completion summary
 
@@ -502,18 +502,18 @@ Complete this table at the end of a test cycle.
 | Notifications and reminders |  |  |  |  |
 | Attendance |  |  |  |  |
 | Analytics and reports |  |  |  |  |
-| GA optimizer and experiments |  |  |  |  |
-| User evaluation |  |  |  |  |
+| GA optimizer and performance tests |  |  |  |  |
+| User feedback |  |  |  |  |
 | Validation, resilience, and responsive UI |  |  |  |  |
 
 ### Exit criteria
 
-The application is ready for an evaluation demonstration when:
+The application is ready to complete the UAT cycle when:
 
 - every master lifecycle test passes;
 - no role can access another role’s protected functions or private records;
 - no high-severity defect can corrupt schedules, registrations, or attendance;
 - automated tests and the production asset build pass;
-- CSV evidence opens correctly;
-- GA runs and experiments have been recorded on controlled data; and
-- representative users can complete the usability questionnaire.
+- CSV exports open correctly;
+- GA optimization runs and performance tests have been recorded using controlled data; and
+- representative users can complete and update the service feedback form.
