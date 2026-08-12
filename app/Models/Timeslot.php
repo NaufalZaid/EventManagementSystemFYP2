@@ -11,9 +11,19 @@ class Timeslot extends Model
         'start_time',
         'end_time',
     ];
-    
+
+    protected function casts(): array
+    {
+        return ['slot_date' => 'date'];
+    }
+
     public function schedules()
     {
         return $this->hasMany(EventSchedule::class);
+    }
+
+    public function venueRequests()
+    {
+        return $this->hasMany(VenueRequest::class);
     }
 }

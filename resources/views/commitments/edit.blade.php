@@ -1,0 +1,1 @@
+<x-layouts.app title="Edit commitment"><x-page-header title="Edit personal commitment" description="Update this calendar item and review any resulting clashes." /><div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><x-commitments.form :commitment="$commitment" /></div></x-layouts.app>

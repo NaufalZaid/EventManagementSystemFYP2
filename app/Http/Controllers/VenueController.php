@@ -35,6 +35,7 @@ class VenueController extends Controller
             'location' => 'nullable|string|max:255',
             'capacity' => 'required|integer|min:0',
             'description' => 'nullable|string',
+            'is_active' => 'required|boolean',
         ]);
 
         Venue::create($validated);
@@ -68,6 +69,7 @@ class VenueController extends Controller
             'location' => 'nullable|string|max:255',
             'capacity' => 'required|integer|min:0',
             'description' => 'nullable|string',
+            'is_active' => 'required|boolean',
         ]);
 
         $venue->update($validated);

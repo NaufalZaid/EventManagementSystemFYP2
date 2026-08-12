@@ -1,0 +1,1 @@
+<x-layouts.app title="Add commitment"><x-page-header title="Add personal commitment" description="Record a class, test, meeting, study block, or personal appointment." /><div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><x-commitments.form /></div></x-layouts.app>
