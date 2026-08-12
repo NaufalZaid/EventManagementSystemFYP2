@@ -69,7 +69,7 @@ class OptimizationExperimentController extends Controller
             'results' => $results->all(),
         ]);
 
-        return redirect()->route('experiments.show', $experiment)->with('success', 'Benchmark experiment completed and stored as evaluation evidence.');
+        return redirect()->route('experiments.show', $experiment)->with('success', 'GA performance test completed and saved.');
     }
 
     public function show(OptimizationExperiment $experiment)
