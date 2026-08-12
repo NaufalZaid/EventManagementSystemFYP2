@@ -13,8 +13,8 @@
     <main class="grid min-h-screen lg:grid-cols-2">
         <section class="hidden bg-slate-950 p-12 lg:flex lg:flex-col lg:justify-between">
             <a href="{{ route('home') }}" class="flex items-center gap-3 text-white"><span class="grid h-10 w-10 place-items-center rounded-xl bg-indigo-600 text-sm font-bold">EMS</span><span class="font-semibold">Event Management System</span></a>
-            <div class="max-w-xl"><span class="rounded-full bg-indigo-500/15 px-3 py-1 text-xs font-semibold text-indigo-300 ring-1 ring-indigo-400/30">MMU FYP2 Prototype</span><h1 class="mt-6 text-4xl font-bold leading-tight tracking-tight text-white">Plan, coordinate, and optimize university events in one place.</h1><p class="mt-5 text-sm leading-7 text-slate-300">Secure role-specific workspaces establish the foundation for student registration, organizer planning, administrator approval, and Genetic Algorithm scheduling.</p></div>
-            <p class="text-xs text-slate-500">FYP01-SE-T2530-0794 · Multimedia University</p>
+            <div class="max-w-xl"><span class="rounded-full bg-indigo-500/15 px-3 py-1 text-xs font-semibold text-indigo-300 ring-1 ring-indigo-400/30">Multimedia University</span><h1 class="mt-6 text-4xl font-bold leading-tight tracking-tight text-white">University events, coordinated in one place.</h1><p class="mt-5 text-sm leading-7 text-slate-300">Access event registration, organizer planning, administrative approvals, venue scheduling, attendance, and reporting through your assigned workspace.</p></div>
+            <p class="text-xs text-slate-500">Event Management System · Multimedia University</p>
         </section>
         <section class="flex items-center justify-center bg-slate-50 px-5 py-10 sm:px-8">
             <div class="w-full max-w-md">

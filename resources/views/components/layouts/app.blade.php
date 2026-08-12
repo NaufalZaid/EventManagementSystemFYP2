@@ -37,11 +37,11 @@
                 $navigation[] = ['label' => 'Timeslots', 'route' => 'timeslots.index', 'pattern' => 'timeslots.*'];
                 $navigation[] = ['label' => 'Schedules', 'route' => 'schedules.index', 'pattern' => 'schedules.*'];
                 $navigation[] = ['label' => 'GA Optimizer', 'route' => 'optimizer.index', 'pattern' => 'optimizer.*'];
-                $navigation[] = ['label' => 'GA Experiments', 'route' => 'experiments.index', 'pattern' => 'experiments.*'];
-                $navigation[] = ['label' => 'Evaluation Results', 'route' => 'evaluation.results', 'pattern' => 'evaluation.results'];
+                $navigation[] = ['label' => 'GA Performance Tests', 'route' => 'experiments.index', 'pattern' => 'experiments.*'];
+                $navigation[] = ['label' => 'Feedback Results', 'route' => 'evaluation.results', 'pattern' => 'evaluation.results'];
             }
 
-            $navigation[] = ['label' => 'Evaluate System', 'route' => 'evaluation.edit', 'pattern' => 'evaluation.edit'];
+            $navigation[] = ['label' => 'Give Feedback', 'route' => 'evaluation.edit', 'pattern' => 'evaluation.edit'];
         }
 
         $brandRoute = auth()->check() ? route('dashboard') : route('home');
@@ -57,11 +57,10 @@
                     </button>
                     <a href="{{ $brandRoute }}" class="flex items-center gap-3">
                         <span class="grid h-9 w-9 place-items-center rounded-xl bg-indigo-600 text-sm font-bold text-white shadow-sm">EMS</span>
-                        <span class="hidden sm:block"><span class="block text-sm font-semibold text-slate-900">Event Management System</span><span class="block text-xs text-slate-500">MMU scheduling prototype</span></span>
+                        <span class="hidden sm:block"><span class="block text-sm font-semibold text-slate-900">Event Management System</span><span class="block text-xs text-slate-500">Multimedia University</span></span>
                     </a>
                 </div>
                 <div class="flex items-center gap-3">
-                    <span class="hidden rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 ring-1 ring-indigo-200 sm:inline-flex">Phase 8 · Evaluation evidence</span>
                     @auth
                         @php($initials = collect(explode(' ', auth()->user()->name))->take(2)->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))->join(''))
                         <button id="user-menu-button" data-dropdown-toggle="user-menu" type="button" class="grid h-9 w-9 place-items-center rounded-full bg-slate-900 text-xs font-semibold text-white" aria-expanded="false">{{ $initials }}</button>
