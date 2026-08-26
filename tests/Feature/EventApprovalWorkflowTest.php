@@ -17,6 +17,26 @@ class EventApprovalWorkflowTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_administrator_created_events_are_approved_automatically(): void
+    {
+        $administrator = User::factory()->administrator()->create();
+
+        $this->actingAs($administrator)->post(route('events.store'), [
+            'title' => 'Administrator Created Event',
+            'event_type' => 'workshop',
+            'committee' => 'Administration',
+            'description' => 'Created directly by an administrator.',
+            'capacity' => 60,
+            'duration_minutes' => 90,
+        ])->assertSessionHasNoErrors();
+
+        $event = Event::where('title', 'Administrator Created Event')->firstOrFail();
+        $this->assertSame(EventStatus::Approved, $event->status);
+        $this->assertSame($administrator->id, $event->reviewed_by);
+        $this->assertNotNull($event->submitted_at);
+        $this->assertNotNull($event->reviewed_at);
+    }
+
     public function test_organizer_can_only_manage_their_own_event(): void
     {
         $owner = User::factory()->organizer()->create();
@@ -96,6 +116,22 @@ class EventApprovalWorkflowTest extends TestCase
             'venue_id' => $venue->id,
             'timeslot_id' => $timeslot->id,
         ])->assertSessionHasErrors(['venue_id', 'timeslot_id']);
+    }
+
+    public function test_organizer_cannot_submit_a_second_active_venue_request_for_the_same_event(): void
+    {
+        $organizer = User::factory()->organizer()->create();
+        $event = $this->event($organizer, EventStatus::Approved);
+        $venue = Venue::create(['name' => 'UAT Hall', 'capacity' => 150, 'is_active' => true]);
+        $timeslot = Timeslot::create(['slot_date' => '2026-09-10', 'start_time' => '09:00', 'end_time' => '11:00']);
+        $requestData = ['event_id' => $event->id, 'venue_id' => $venue->id, 'timeslot_id' => $timeslot->id];
+
+        $this->actingAs($organizer)->post(route('venue-requests.store'), $requestData)
+            ->assertRedirect(route('venue-requests.index'));
+        $this->actingAs($organizer)->post(route('venue-requests.store'), $requestData)
+            ->assertStatus(422);
+
+        $this->assertDatabaseCount('venue_requests', 1);
     }
 
     private function event(User $organizer, EventStatus $status = EventStatus::Draft): Event

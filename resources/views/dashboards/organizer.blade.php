@@ -10,5 +10,4 @@
         <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><p class="text-sm text-slate-500">Open tasks</p><p class="mt-2 text-3xl font-bold text-slate-900">{{ $openTaskCount }}</p><a href="{{ route('events.index') }}" class="mt-3 inline-flex text-xs font-semibold text-indigo-600">Open event planning →</a></div>
     </div>
 
-    <section class="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><h2 class="font-semibold text-slate-900">Organizer workflow</h2><div class="mt-5 grid gap-4 md:grid-cols-4">@foreach ([['1', 'Draft event', 'Add complete requirements'], ['2', 'Submit proposal', 'Administrator review'], ['3', 'Request venue', 'Choose an open slot'], ['4', 'Receive schedule', 'Created on approval']] as [$number, $title, $status])<div class="rounded-xl bg-slate-50 p-4"><span class="grid h-8 w-8 place-items-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">{{ $number }}</span><p class="mt-3 text-sm font-semibold text-slate-900">{{ $title }}</p><p class="mt-1 text-xs text-slate-500">{{ $status }}</p></div>@endforeach</div></section>
 </x-layouts.app>

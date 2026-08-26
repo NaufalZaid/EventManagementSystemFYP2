@@ -71,7 +71,9 @@ class EventRegistrationController extends Controller
             ->where('user_id', $request->user()->id)
             ->where('status', RegistrationStatus::Registered)
             ->firstOrFail();
-        abort_if($registration->attendanceRecord()->exists(), 422, 'You cannot cancel after attendance has been recorded.');
+        if ($registration->attendanceRecord()->exists()) {
+            return back()->with('warning', 'You cannot cancel after attendance has been recorded.');
+        }
         $registration->update(['status' => RegistrationStatus::Cancelled, 'cancelled_at' => now()]);
 
         return back()->with('success', 'Event registration cancelled.');

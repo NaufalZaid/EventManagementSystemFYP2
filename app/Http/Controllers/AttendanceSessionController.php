@@ -49,7 +49,7 @@ class AttendanceSessionController extends Controller
             'token' => $token,
             'token_hash' => hash('sha256', $token),
             'opens_at' => now(),
-            'closes_at' => now()->addMinutes($validated['duration_minutes']),
+            'closes_at' => now()->addMinutes((int) $validated['duration_minutes']),
         ]);
 
         return back()->with('success', 'Attendance QR session opened.');

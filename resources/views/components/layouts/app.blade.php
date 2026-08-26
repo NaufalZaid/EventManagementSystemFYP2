@@ -87,7 +87,7 @@
                 @endforeach
             </ul>
             @auth
-                <div class="mt-auto rounded-xl border border-slate-800 bg-slate-900 p-4"><p class="text-xs font-semibold text-indigo-300">Signed in as</p><p class="mt-1 text-sm font-medium text-white">{{ auth()->user()->role->label() }}</p><p class="mt-1 text-xs leading-5 text-slate-400">Navigation is limited to the functions authorized for this role.</p></div>
+                <div class="mt-auto rounded-xl border border-slate-800 bg-slate-900 p-4"><p class="text-xs font-semibold text-indigo-300">Signed in as</p><p class="mt-1 text-sm font-medium text-white">{{ auth()->user()->role->label() }}</p></div>
             @else
                 <div class="mt-auto rounded-xl border border-slate-800 bg-slate-900 p-4"><p class="text-xs font-semibold text-indigo-300">Role-based EMS</p><p class="mt-1 text-xs leading-5 text-slate-400">Sign in to access your student, organizer, or administrator workspace.</p><a href="{{ route('login') }}" class="mt-3 inline-flex text-xs font-semibold text-white hover:text-indigo-300">Sign in →</a></div>
             @endauth

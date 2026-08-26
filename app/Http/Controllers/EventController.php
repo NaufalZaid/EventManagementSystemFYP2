@@ -28,12 +28,20 @@ class EventController extends Controller
 
     public function store(Request $request)
     {
+        $isAdministrator = $request->user()->hasRole('administrator');
         $event = Event::create($this->validated($request) + [
             'organizer_id' => $request->user()->id,
-            'status' => EventStatus::Draft,
+            'status' => $isAdministrator ? EventStatus::Approved : EventStatus::Draft,
+            'submitted_at' => $isAdministrator ? now() : null,
+            'reviewed_at' => $isAdministrator ? now() : null,
+            'reviewed_by' => $isAdministrator ? $request->user()->id : null,
         ]);
 
-        return redirect()->route('events.edit', $event)->with('success', 'Draft created. Review it, then submit it for approval.');
+        $message = $isAdministrator
+            ? 'Event created and approved. It can now be scheduled.'
+            : 'Draft created. Review it, then submit it for approval.';
+
+        return redirect()->route('events.edit', $event)->with('success', $message);
     }
 
     public function edit(Request $request, Event $event)

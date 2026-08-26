@@ -25,7 +25,7 @@ class AttendanceAndAnalyticsTest extends TestCase
         $event = $this->event($organizer);
 
         $this->actingAs($organizer)->post(route('events.attendance.sessions.store', $event), [
-            'duration_minutes' => 30,
+            'duration_minutes' => '30',
         ])->assertSessionHasNoErrors();
 
         $this->assertDatabaseCount('attendance_sessions', 1);
@@ -50,7 +50,11 @@ class AttendanceAndAnalyticsTest extends TestCase
 
         $this->actingAs($student)->post(route('attendance.check-in.store', $token))->assertSessionHasErrors('attendance');
         $this->assertDatabaseCount('attendance_records', 1);
-        $this->actingAs($student)->delete(route('events.registration.destroy', $event))->assertStatus(422);
+        $this->actingAs($student)->from(route('discover.show', $event))
+            ->delete(route('events.registration.destroy', $event))
+            ->assertRedirect(route('discover.show', $event))
+            ->assertSessionHas('warning', 'You cannot cancel after attendance has been recorded.');
+        $this->assertSame(RegistrationStatus::Registered, $registration->fresh()->status);
     }
 
     public function test_unregistered_student_and_closed_session_cannot_record_attendance(): void
