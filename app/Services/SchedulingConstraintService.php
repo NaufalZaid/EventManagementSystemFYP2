@@ -83,6 +83,10 @@ class SchedulingConstraintService
     {
         [$startsAt, $endsAt] = $this->boundaries($timeslot);
 
+        if ($startsAt->isWeekend()) {
+            return collect();
+        }
+
         return Venue::query()
             ->where('is_active', true)
             ->where('capacity', '>=', $event->capacity)

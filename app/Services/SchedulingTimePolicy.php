@@ -20,6 +20,9 @@ class SchedulingTimePolicy
         $closingHour = $outsideWorkingHours ? self::EXTENDED_CLOSING_HOUR : self::NORMAL_CLOSING_HOUR;
         $errors = [];
 
+        if ($startsAt->isWeekend()) {
+            $errors['slot_date'] = 'Weekends are blackout periods. Select a weekday.';
+        }
         if ($startsAt->minute !== 0 || $startsAt->second !== 0) {
             $errors['start_time'] = 'The start time must be on the hour (for example, 09:00).';
         }

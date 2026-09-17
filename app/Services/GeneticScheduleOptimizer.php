@@ -62,7 +62,14 @@ class GeneticScheduleOptimizer
                 foreach ($timeslots as $timeslot) {
                     $startsAt = Carbon::parse($timeslot->slot_date->format('Y-m-d').' '.$timeslot->start_time);
                     $endsAt = Carbon::parse($timeslot->slot_date->format('Y-m-d').' '.$timeslot->end_time);
+                    $closingHour = $event->is_outside_working_hours
+                        ? SchedulingTimePolicy::EXTENDED_CLOSING_HOUR
+                        : SchedulingTimePolicy::NORMAL_CLOSING_HOUR;
                     if (! $venue->is_active || $event->capacity > $venue->capacity
+                        || ! $timeslot->slot_date->isWeekday()
+                        || $startsAt->minute !== 0 || $endsAt->minute !== 0
+                        || $startsAt->hour < SchedulingTimePolicy::OPENING_HOUR
+                        || $startsAt->hour >= $closingHour || $endsAt->hour > $closingHour
                         || $endsAt->lessThanOrEqualTo($startsAt)
                         || $startsAt->diffInMinutes($endsAt) < $event->duration_minutes) {
                         continue;
@@ -97,6 +104,9 @@ class GeneticScheduleOptimizer
         $unusedRatio = $venue->capacity > 0 ? ($venue->capacity - $event->capacity) / $venue->capacity : 1;
         $penalty = max(0, $unusedRatio * 20);
         $details = ['unused_capacity' => $venue->capacity - $event->capacity];
+        $slotMinutes = Carbon::parse($timeslot->start_time)->diffInMinutes(Carbon::parse($timeslot->end_time));
+        $details['unused_minutes'] = max(0, $slotMinutes - $event->duration_minutes);
+        $penalty += $details['unused_minutes'] / 60 * 5;
 
         if ($event->preferred_venue_id) {
             $details['preferred_venue_met'] = $event->preferred_venue_id === $venue->id;

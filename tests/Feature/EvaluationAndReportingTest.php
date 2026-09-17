@@ -48,7 +48,6 @@ class EvaluationAndReportingTest extends TestCase
         $administrator = User::factory()->administrator()->create();
         $organizer = User::factory()->organizer()->create();
         Venue::create(['name' => 'Evaluation Hall', 'capacity' => 100, 'is_active' => true]);
-        Timeslot::create(['slot_date' => today()->addDays(5), 'start_time' => '09:00', 'end_time' => '11:00']);
         $this->event($organizer);
 
         $this->actingAs($administrator)->post(route('experiments.store'), [

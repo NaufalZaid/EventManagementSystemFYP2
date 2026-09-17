@@ -8,7 +8,9 @@ use App\Models\OptimizationRun;
 use App\Models\Timeslot;
 use App\Models\User;
 use App\Models\Venue;
+use App\Services\AutomaticTimeslotService;
 use App\Services\GeneticScheduleOptimizer;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -21,8 +23,10 @@ class GeneticScheduleOptimizerTest extends TestCase
         $administrator = User::factory()->administrator()->create();
         $organizer = User::factory()->organizer()->create();
         $venue = Venue::create(['name' => 'Exact Fit Hall', 'capacity' => 100, 'is_active' => true]);
-        $timeslot = Timeslot::create(['slot_date' => today()->addDays(5), 'start_time' => '09:00', 'end_time' => '11:00']);
-        $event = $this->approvedEvent($organizer, ['preferred_venue_id' => $venue->id, 'preferred_date' => $timeslot->slot_date, 'preferred_start_time' => '09:00']);
+        $preferredDate = today()->addWeekday();
+        $event = $this->approvedEvent($organizer, ['preferred_venue_id' => $venue->id, 'preferred_date' => $preferredDate, 'preferred_start_time' => '09:00']);
+
+        $this->assertDatabaseCount('timeslots', 0);
 
         $this->actingAs($administrator)->post(route('optimizer.store'), [
             'population_size' => 20, 'generations' => 20, 'mutation_rate' => 0.08,
@@ -31,7 +35,11 @@ class GeneticScheduleOptimizerTest extends TestCase
         $run = OptimizationRun::with('assignments')->firstOrFail();
         $this->assertSame(0, $run->hard_conflicts);
         $this->assertSame($venue->id, $run->assignments->first()->venue_id);
-        $this->assertSame($timeslot->id, $run->assignments->first()->timeslot_id);
+        $generatedTimeslot = $run->assignments->first()->timeslot;
+        $this->assertTrue($generatedTimeslot->slot_date->isSameDay($preferredDate));
+        $this->assertTrue($generatedTimeslot->slot_date->isWeekday());
+        $this->assertStringEndsWith(':00:00', $generatedTimeslot->start_time);
+        $this->assertTrue(Timeslot::whereDate('slot_date', $preferredDate)->where('start_time', '09:00:00')->exists());
         $this->actingAs($administrator)->get(route('optimizer.show', $run))->assertOk()->assertSee('Venue met')->assertSee('Apply generated schedule');
 
         $this->actingAs($administrator)->post(route('optimizer.apply', $run))->assertRedirect(route('schedules.index'));
@@ -45,7 +53,6 @@ class GeneticScheduleOptimizerTest extends TestCase
         $administrator = User::factory()->administrator()->create();
         $organizer = User::factory()->organizer()->create();
         Venue::create(['name' => 'Tiny Room', 'capacity' => 10, 'is_active' => true]);
-        Timeslot::create(['slot_date' => today()->addDays(5), 'start_time' => '09:00', 'end_time' => '11:00']);
         $this->approvedEvent($organizer);
 
         $this->actingAs($administrator)->post(route('optimizer.store'), [
@@ -78,6 +85,28 @@ class GeneticScheduleOptimizerTest extends TestCase
     {
         $this->actingAs(User::factory()->organizer()->create())->get(route('optimizer.index'))->assertForbidden();
         $this->actingAs(User::factory()->create())->get(route('optimizer.index'))->assertForbidden();
+    }
+
+    public function test_automatic_candidates_cover_weekday_hours_and_respect_extended_events(): void
+    {
+        $organizer = User::factory()->organizer()->create();
+        $venue = Venue::create(['name' => 'Open Hall', 'capacity' => 100, 'is_active' => true])->load('blackouts');
+        $normal = $this->approvedEvent($organizer);
+        $extended = $this->approvedEvent($organizer, ['title' => 'Evening Event', 'is_outside_working_hours' => true]);
+        $monday = today()->next(Carbon::MONDAY);
+        $candidates = app(AutomaticTimeslotService::class)->generate(collect([$normal, $extended]), $monday, $monday);
+
+        $this->assertTrue($candidates->every(fn (Timeslot $timeslot) => $timeslot->slot_date->isWeekday()));
+        $this->assertTrue($candidates->contains(fn (Timeslot $timeslot) => $timeslot->start_time === '08:00:00'));
+        $evening = $candidates->first(fn (Timeslot $timeslot) => $timeslot->start_time === '22:00:00' && $timeslot->end_time === '23:00:00');
+        $this->assertNotNull($evening);
+        $parameters = ['population_size' => 10, 'generations' => 5, 'mutation_rate' => 0.1, 'seed' => 99];
+
+        $normalResult = app(GeneticScheduleOptimizer::class)->optimize(collect([$normal]), collect([$venue]), collect([$evening]), $parameters);
+        $extendedResult = app(GeneticScheduleOptimizer::class)->optimize(collect([$extended]), collect([$venue]), collect([$evening]), $parameters);
+
+        $this->assertSame(1, $normalResult['hard_conflicts']);
+        $this->assertSame(0, $extendedResult['hard_conflicts']);
     }
 
     private function approvedEvent(User $organizer, array $attributes = []): Event

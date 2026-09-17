@@ -6,10 +6,11 @@ use App\Enums\EventStatus;
 use App\Models\Event;
 use App\Models\EventSchedule;
 use App\Models\OptimizationRun;
-use App\Models\Timeslot;
 use App\Models\Venue;
+use App\Services\AutomaticTimeslotService;
 use App\Services\GeneticScheduleOptimizer;
 use App\Services\SchedulingConstraintService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -18,16 +19,20 @@ class OptimizationRunController extends Controller
     public function __construct(
         private readonly GeneticScheduleOptimizer $optimizer,
         private readonly SchedulingConstraintService $constraints,
+        private readonly AutomaticTimeslotService $automaticTimeslots,
     ) {}
 
     public function index()
     {
         $runs = OptimizationRun::with('creator')->latest()->get();
-        $eligibleCount = $this->eligibleEvents()->count();
+        $events = $this->eligibleEvents()->get();
+        $eligibleCount = $events->count();
         $venueCount = Venue::where('is_active', true)->count();
-        $timeslotCount = Timeslot::whereDate('slot_date', '>=', today())->count();
+        $windowStart = $this->automaticTimeslots->defaultStart();
+        $windowEnd = $this->automaticTimeslots->defaultEnd();
+        $timeslotCount = $this->automaticTimeslots->candidateCount($events, $windowStart, $windowEnd);
 
-        return view('optimizer.index', compact('runs', 'eligibleCount', 'venueCount', 'timeslotCount'));
+        return view('optimizer.index', compact('runs', 'eligibleCount', 'venueCount', 'timeslotCount', 'windowStart', 'windowEnd'));
     }
 
     public function store(Request $request)
@@ -37,12 +42,17 @@ class OptimizationRunController extends Controller
             'generations' => ['required', 'integer', 'min:5', 'max:1000'],
             'mutation_rate' => ['required', 'numeric', 'min:0.01', 'max:0.5'],
             'seed' => ['nullable', 'integer', 'min:1'],
+            'scheduling_from' => ['nullable', 'date', 'after:today'],
+            'scheduling_to' => ['nullable', 'date', 'after_or_equal:scheduling_from'],
         ]);
         $events = $this->eligibleEvents()->orderBy('id')->get();
         $venues = Venue::with('blackouts')->where('is_active', true)->orderBy('id')->get();
-        $timeslots = Timeslot::whereDate('slot_date', '>=', today())->orderBy('slot_date')->orderBy('start_time')->get();
+        $windowStart = Carbon::parse($parameters['scheduling_from'] ?? $this->automaticTimeslots->defaultStart());
+        $windowEnd = Carbon::parse($parameters['scheduling_to'] ?? $this->automaticTimeslots->defaultEnd());
+        abort_if($windowStart->diffInDays($windowEnd) >= AutomaticTimeslotService::MAX_WINDOW_DAYS, 422, 'The scheduling window cannot exceed 90 days.');
+        $timeslots = $this->automaticTimeslots->generate($events, $windowStart, $windowEnd);
         abort_if($events->isEmpty(), 422, 'There are no approved unscheduled events to optimize.');
-        abort_if($venues->isEmpty() || $timeslots->isEmpty(), 422, 'Active venues and future timeslots are required.');
+        abort_if($venues->isEmpty() || $timeslots->isEmpty(), 422, 'Active venues and weekdays in the scheduling window are required.');
 
         $result = $this->optimizer->optimize($events, $venues, $timeslots, $parameters);
         $run = DB::transaction(function () use ($request, $parameters, $events, $result): OptimizationRun {
@@ -57,7 +67,13 @@ class OptimizationRunController extends Controller
                 'hard_conflicts' => $result['hard_conflicts'],
                 'utilization_percent' => $result['utilization_percent'],
                 'execution_ms' => $result['execution_ms'],
-                'metrics' => ['soft_penalty' => $result['soft_penalty'], 'available_options' => $result['available_options'], 'seed' => $result['seed']],
+                'metrics' => [
+                    'soft_penalty' => $result['soft_penalty'],
+                    'available_options' => $result['available_options'],
+                    'seed' => $result['seed'],
+                    'scheduling_from' => $parameters['scheduling_from'] ?? $this->automaticTimeslots->defaultStart()->toDateString(),
+                    'scheduling_to' => $parameters['scheduling_to'] ?? $this->automaticTimeslots->defaultEnd()->toDateString(),
+                ],
             ]);
             foreach ($events as $event) {
                 $gene = $result['chromosome'][$event->id] ?? null;

@@ -24,8 +24,10 @@ class VenueBlackoutController extends Controller
             'all_day' => ['nullable', 'boolean'],
             'all_venues' => ['nullable', 'boolean'],
             'blackout_date' => ['required_if:all_day,1', 'nullable', 'date'],
-            'starts_at' => ['required_unless:all_day,1', 'nullable', 'date'],
-            'ends_at' => ['required_unless:all_day,1', 'nullable', 'date', 'after:starts_at'],
+            'starts_on' => ['required_unless:all_day,1', 'nullable', 'date'],
+            'start_time' => ['required_unless:all_day,1', 'nullable', 'date_format:H:i'],
+            'ends_on' => ['required_unless:all_day,1', 'nullable', 'date'],
+            'end_time' => ['required_unless:all_day,1', 'nullable', 'date_format:H:i'],
             'reason' => ['required', 'string', 'max:255'],
         ]);
 
@@ -33,11 +35,26 @@ class VenueBlackoutController extends Controller
             $startsAt = Carbon::parse($validated['blackout_date'])->startOfDay();
             $endsAt = $startsAt->copy()->addDay();
         } else {
-            $startsAt = Carbon::parse($validated['starts_at']);
-            $endsAt = Carbon::parse($validated['ends_at']);
+            $startsAt = Carbon::parse($validated['starts_on'].' '.$validated['start_time']);
+            $endsAt = Carbon::parse($validated['ends_on'].' '.$validated['end_time']);
             if ($startsAt->minute !== 0 || $startsAt->second !== 0 || $endsAt->minute !== 0 || $endsAt->second !== 0) {
                 throw ValidationException::withMessages([
-                    'starts_at' => 'Blackout start and end times must be on the hour.',
+                    'start_time' => 'Blackout start and end times must be on the hour.',
+                ]);
+            }
+            if ($startsAt->hour < 8 || $startsAt->hour >= 23) {
+                throw ValidationException::withMessages([
+                    'start_time' => 'The blackout start hour must be between 08:00 and 22:00.',
+                ]);
+            }
+            if ($endsAt->hour < 8 || $endsAt->hour > 23) {
+                throw ValidationException::withMessages([
+                    'end_time' => 'The blackout end hour must be between 08:00 and 23:00.',
+                ]);
+            }
+            if ($endsAt->lessThanOrEqualTo($startsAt)) {
+                throw ValidationException::withMessages([
+                    'ends_on' => 'The blackout end must be after its start.',
                 ]);
             }
         }
