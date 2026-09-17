@@ -1,1 +1,1 @@
-<x-layouts.app title="Create schedule"><x-page-header title="Create schedule" description="Assign an event to a suitable venue and timeslot." /><div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:p-8">@include('schedules._form')</div></x-layouts.app>
+<x-layouts.app title="Create schedule"><x-page-header title="Create schedule" description="Assign an event to a venue and set its exact date and hours." /><div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:p-8">@include('schedules._form')</div></x-layouts.app>

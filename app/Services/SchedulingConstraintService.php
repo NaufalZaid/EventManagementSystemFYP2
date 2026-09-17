@@ -12,10 +12,25 @@ use Illuminate\Validation\ValidationException;
 
 class SchedulingConstraintService
 {
+    public function __construct(private readonly SchedulingTimePolicy $timePolicy) {}
+
     public function validate(Event $event, Venue $venue, Timeslot $timeslot, ?EventSchedule $except = null): void
     {
         $errors = [];
         [$startsAt, $endsAt] = $this->boundaries($timeslot);
+
+        try {
+            $this->timePolicy->validate(
+                $startsAt->toDateString(),
+                $startsAt->format('H:i:s'),
+                $endsAt->format('H:i:s'),
+                $event->is_outside_working_hours
+            );
+        } catch (ValidationException) {
+            $errors['timeslot_id'] = $event->is_outside_working_hours
+                ? 'The timeslot must use whole hours between 08:00 and 23:00.'
+                : 'The timeslot must use whole hours between 08:00 and 18:00.';
+        }
 
         if (! $venue->is_active) {
             $errors['venue_id'] = 'The selected venue is currently inactive.';
@@ -62,6 +77,28 @@ class SchedulingConstraintService
         if ($errors !== []) {
             throw ValidationException::withMessages($errors);
         }
+    }
+
+    public function availableVenues(Event $event, Timeslot $timeslot)
+    {
+        [$startsAt, $endsAt] = $this->boundaries($timeslot);
+
+        return Venue::query()
+            ->where('is_active', true)
+            ->where('capacity', '>=', $event->capacity)
+            ->whereDoesntHave('schedules', function ($query) use ($timeslot): void {
+                $query->whereHas('timeslot', function ($query) use ($timeslot): void {
+                    $query->whereDate('slot_date', $timeslot->slot_date)
+                        ->where('start_time', '<', $timeslot->end_time)
+                        ->where('end_time', '>', $timeslot->start_time);
+                });
+            })
+            ->whereDoesntHave('blackouts', function ($query) use ($startsAt, $endsAt): void {
+                $query->where('starts_at', '<', $endsAt)
+                    ->where('ends_at', '>', $startsAt);
+            })
+            ->orderBy('name')
+            ->get();
     }
 
     private function boundaries(Timeslot $timeslot): array

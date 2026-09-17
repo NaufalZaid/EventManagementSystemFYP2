@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
 class Timeslot extends Model
@@ -15,6 +16,29 @@ class Timeslot extends Model
     protected function casts(): array
     {
         return ['slot_date' => 'date'];
+    }
+
+    public function setStartTimeAttribute(?string $value): void
+    {
+        $this->attributes['start_time'] = $value === null
+            ? null
+            : Carbon::parse($value)->startOfHour()->format('H:i:s');
+    }
+
+    public function setEndTimeAttribute(?string $value): void
+    {
+        if ($value === null) {
+            $this->attributes['end_time'] = null;
+
+            return;
+        }
+
+        $time = Carbon::parse($value);
+        if ($time->minute !== 0 || $time->second !== 0) {
+            $time->addHour()->startOfHour();
+        }
+
+        $this->attributes['end_time'] = $time->format('H:i:s');
     }
 
     public function schedules()

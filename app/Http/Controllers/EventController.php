@@ -6,10 +6,13 @@ use App\Enums\EventStatus;
 use App\Enums\RegistrationStatus;
 use App\Models\Event;
 use App\Models\Venue;
+use App\Services\SchedulingTimePolicy;
 use Illuminate\Http\Request;
 
 class EventController extends Controller
 {
+    public function __construct(private readonly SchedulingTimePolicy $timePolicy) {}
+
     public function index(Request $request)
     {
         $events = Event::with(['organizer', 'schedules.venue', 'schedules.timeslot'])
@@ -75,17 +78,38 @@ class EventController extends Controller
 
     private function validated(Request $request): array
     {
-        return $request->validate([
+        $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'event_type' => ['required', 'string', 'max:100'],
             'committee' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'capacity' => ['required', 'integer', 'min:1'],
-            'duration_minutes' => ['required', 'integer', 'min:1'],
+            'duration_minutes' => [
+                'required',
+                'integer',
+                'min:60',
+                'multiple_of:60',
+                'max:'.($request->boolean('is_outside_working_hours') ? 900 : 600),
+            ],
+            'is_outside_working_hours' => ['nullable', 'boolean'],
             'preferred_venue_id' => ['nullable', 'exists:venues,id'],
             'preferred_date' => ['nullable', 'date'],
             'preferred_start_time' => ['nullable', 'date_format:H:i'],
         ]);
+
+        $validated['is_outside_working_hours'] = $request->boolean('is_outside_working_hours');
+
+        if (! empty($validated['preferred_start_time'])) {
+            $startHour = (int) substr($validated['preferred_start_time'], 0, 2);
+            $this->timePolicy->validate(
+                $validated['preferred_date'] ?? now()->toDateString(),
+                $validated['preferred_start_time'],
+                sprintf('%02d:00', $startHour + 1),
+                $validated['is_outside_working_hours']
+            );
+        }
+
+        return $validated;
     }
 
     private function authorizeManagement(Request $request, Event $event): void

@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Timeslot;
+use App\Services\SchedulingTimePolicy;
 use Illuminate\Http\Request;
 
 class TimeslotController extends Controller
 {
+    public function __construct(private readonly SchedulingTimePolicy $timePolicy) {}
+
     /**
      * Display a listing of the resource.
      */
@@ -32,9 +35,12 @@ class TimeslotController extends Controller
     {
         $validated = $request->validate([
             'slot_date' => 'required|date',
-            'start_time' => 'required',
-            'end_time' => 'required|after:start_time',
+            'start_time' => ['required', 'date_format:H:i'],
+            'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
+            'is_outside_working_hours' => ['nullable', 'boolean'],
         ]);
+        $this->timePolicy->validate($validated['slot_date'], $validated['start_time'], $validated['end_time'], $request->boolean('is_outside_working_hours'));
+        unset($validated['is_outside_working_hours']);
 
         Timeslot::create($validated);
 
@@ -64,9 +70,12 @@ class TimeslotController extends Controller
     {
         $validated = $request->validate([
             'slot_date' => 'required|date',
-            'start_time' => 'required',
-            'end_time' => 'required|after:start_time',
+            'start_time' => ['required', 'date_format:H:i'],
+            'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
+            'is_outside_working_hours' => ['nullable', 'boolean'],
         ]);
+        $this->timePolicy->validate($validated['slot_date'], $validated['start_time'], $validated['end_time'], $request->boolean('is_outside_working_hours'));
+        unset($validated['is_outside_working_hours']);
 
         $timeslot->update($validated);
 

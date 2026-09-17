@@ -27,7 +27,7 @@ class EventApprovalWorkflowTest extends TestCase
             'committee' => 'Administration',
             'description' => 'Created directly by an administrator.',
             'capacity' => 60,
-            'duration_minutes' => 90,
+            'duration_minutes' => 120,
         ])->assertSessionHasNoErrors();
 
         $event = Event::where('title', 'Administrator Created Event')->firstOrFail();

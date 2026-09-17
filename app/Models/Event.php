@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\EventStatus;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
 class Event extends Model
@@ -15,6 +16,7 @@ class Event extends Model
         'description',
         'capacity',
         'duration_minutes',
+        'is_outside_working_hours',
         'preferred_venue_id',
         'preferred_date',
         'preferred_start_time',
@@ -32,7 +34,22 @@ class Event extends Model
             'submitted_at' => 'datetime',
             'reviewed_at' => 'datetime',
             'preferred_date' => 'date',
+            'is_outside_working_hours' => 'boolean',
         ];
+    }
+
+    public function setDurationMinutesAttribute(?int $value): void
+    {
+        $this->attributes['duration_minutes'] = $value === null
+            ? null
+            : max(60, (int) ceil($value / 60) * 60);
+    }
+
+    public function setPreferredStartTimeAttribute(?string $value): void
+    {
+        $this->attributes['preferred_start_time'] = $value === null
+            ? null
+            : Carbon::parse($value)->startOfHour()->format('H:i:s');
     }
 
     public function organizer()
