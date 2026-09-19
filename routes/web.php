@@ -24,8 +24,10 @@ use App\Http\Controllers\OptimizationExperimentController;
 use App\Http\Controllers\OptimizationRunController;
 use App\Http\Controllers\PersonalCommitmentController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SocietyController;
 use App\Http\Controllers\TimeslotController;
 use App\Http\Controllers\UserEvaluationController;
+use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\VenueBlackoutController;
 use App\Http\Controllers\VenueController;
 use App\Http\Controllers\VenueRequestController;
@@ -99,6 +101,7 @@ Route::middleware('auth')->group(function (): void {
     });
 
     Route::middleware('role:administrator')->group(function (): void {
+        Route::resource('users', UserManagementController::class)->only(['index', 'edit', 'update']);
         Route::get('experiments', [OptimizationExperimentController::class, 'index'])->name('experiments.index');
         Route::post('experiments', [OptimizationExperimentController::class, 'store'])->name('experiments.store');
         Route::get('experiments/{experiment}', [OptimizationExperimentController::class, 'show'])->name('experiments.show');
@@ -117,6 +120,7 @@ Route::middleware('auth')->group(function (): void {
         Route::patch('venue-requests/{venueRequest}/approve', [VenueRequestController::class, 'approve'])->name('venue-requests.approve');
         Route::patch('venue-requests/{venueRequest}/reject', [VenueRequestController::class, 'reject'])->name('venue-requests.reject');
         Route::resource('venues', VenueController::class)->except('show');
+        Route::resource('societies', SocietyController::class)->except('show');
         Route::get('venues/{venue}/blackouts', [VenueBlackoutController::class, 'index'])->name('venues.blackouts.index');
         Route::post('venues/{venue}/blackouts', [VenueBlackoutController::class, 'store'])->name('venues.blackouts.store');
         Route::delete('venues/{venue}/blackouts/{blackout}', [VenueBlackoutController::class, 'destroy'])->name('venues.blackouts.destroy');

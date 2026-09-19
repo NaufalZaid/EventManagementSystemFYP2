@@ -18,6 +18,6 @@ class EventPlanningController extends Controller
 
     public static function authorizeEvent(Request $request, Event $event): void
     {
-        abort_unless($request->user()->hasRole('administrator') || $event->organizer_id === $request->user()->id, 403);
+        abort_unless($request->user()->canManageEvent($event), 403);
     }
 }

@@ -34,10 +34,10 @@ class DashboardController extends Controller
                     ->first(),
             ]),
             UserRole::Organizer => view('dashboards.organizer', [
-                'eventCount' => Event::where('organizer_id', $request->user()->id)->count(),
-                'scheduledCount' => Event::where('organizer_id', $request->user()->id)->where('status', EventStatus::Scheduled)->count(),
-                'pendingCount' => Event::where('organizer_id', $request->user()->id)->where('status', EventStatus::Submitted)->count(),
-                'openTaskCount' => EventTask::whereHas('event', fn ($query) => $query->where('organizer_id', $request->user()->id))->whereNull('completed_at')->count(),
+                'eventCount' => Event::accessibleTo($request->user())->count(),
+                'scheduledCount' => Event::accessibleTo($request->user())->where('status', EventStatus::Scheduled)->count(),
+                'pendingCount' => Event::accessibleTo($request->user())->where('status', EventStatus::Submitted)->count(),
+                'openTaskCount' => EventTask::whereHas('event', fn ($query) => $query->accessibleTo($request->user()))->whereNull('completed_at')->count(),
             ]),
             UserRole::Administrator => view('dashboards.administrator', [
                 'userCount' => User::count(),

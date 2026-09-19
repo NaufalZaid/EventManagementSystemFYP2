@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\UserRole;
+use App\Models\Society;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -47,7 +48,10 @@ class UserFactory extends Factory
 
     public function organizer(): static
     {
-        return $this->state(fn () => ['role' => UserRole::Organizer]);
+        return $this->state(fn () => [
+            'role' => UserRole::Organizer,
+            'society_id' => Society::factory(),
+        ]);
     }
 
     public function administrator(): static

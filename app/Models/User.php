@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'role'])]
+#[Fillable(['society_id', 'name', 'email', 'password', 'role'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -39,6 +39,28 @@ class User extends Authenticatable
         return collect($roles)->contains(
             fn (UserRole|string $role) => $currentRole === ($role instanceof UserRole ? $role->value : $role)
         );
+    }
+
+    public function society()
+    {
+        return $this->belongsTo(Society::class);
+    }
+
+    public function organizedEvents()
+    {
+        return $this->hasMany(Event::class, 'organizer_id');
+    }
+
+    public function canManageEvent(Event $event): bool
+    {
+        if ($this->hasRole(UserRole::Administrator)) {
+            return true;
+        }
+
+        return $this->hasRole(UserRole::Organizer)
+            && $this->society_id !== null
+            && $this->society?->is_active
+            && $this->society_id === $event->society_id;
     }
 
     public function eventRegistrations()

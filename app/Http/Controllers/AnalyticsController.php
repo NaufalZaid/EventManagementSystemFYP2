@@ -14,12 +14,12 @@ class AnalyticsController extends Controller
     public function index(Request $request)
     {
         $events = Event::query()
-            ->with(['organizer', 'schedules.venue', 'schedules.timeslot'])
+            ->with(['organizer', 'society', 'schedules.venue', 'schedules.timeslot'])
             ->withCount([
                 'registrations as registered_count' => fn ($query) => $query->where('status', RegistrationStatus::Registered),
                 'attendanceRecords as attended_count',
             ])
-            ->when($request->user()->hasRole('organizer'), fn ($query) => $query->where('organizer_id', $request->user()->id))
+            ->accessibleTo($request->user())
             ->whereHas('schedules')
             ->latest()->get();
         $eventIds = $events->pluck('id');

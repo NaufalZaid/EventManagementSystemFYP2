@@ -25,8 +25,8 @@ class VenueRequestController extends Controller
 
     public function index(Request $request)
     {
-        $requests = VenueRequest::with(['event.organizer', 'venue', 'timeslot', 'requester', 'reviewer'])
-            ->when($request->user()->hasRole('organizer'), fn ($query) => $query->where('requested_by', $request->user()->id))
+        $requests = VenueRequest::with(['event.organizer', 'event.society', 'venue', 'timeslot', 'requester', 'reviewer'])
+            ->when($request->user()->hasRole('organizer'), fn ($query) => $query->whereHas('event', fn ($query) => $query->accessibleTo($request->user())))
             ->latest()
             ->get();
 
@@ -35,7 +35,7 @@ class VenueRequestController extends Controller
 
     public function create(Request $request)
     {
-        $events = Event::where('organizer_id', $request->user()->id)
+        $events = Event::accessibleTo($request->user())
             ->where('status', EventStatus::Approved)
             ->whereDoesntHave('venueRequests', fn ($query) => $query->whereIn('status', [VenueRequestStatus::Pending, VenueRequestStatus::Approved]))
             ->orderBy('title')->get();
@@ -74,7 +74,7 @@ class VenueRequestController extends Controller
             'organizer_notes' => ['nullable', 'string', 'max:2000'],
         ]);
         $event = Event::findOrFail($validated['event_id']);
-        abort_unless($event->organizer_id === $request->user()->id, 403);
+        abort_unless($request->user()->canManageEvent($event), 403);
         abort_unless($event->status === EventStatus::Approved, 422, 'Only approved events can request a venue.');
         abort_if($event->venueRequests()->whereIn('status', [VenueRequestStatus::Pending, VenueRequestStatus::Approved])->exists(), 422, 'This event already has an active venue request.');
 

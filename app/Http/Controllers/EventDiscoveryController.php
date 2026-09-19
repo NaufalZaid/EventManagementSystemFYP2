@@ -18,7 +18,7 @@ class EventDiscoveryController extends Controller
         ]);
 
         $events = Event::query()
-            ->with(['organizer', 'schedules.venue', 'schedules.timeslot'])
+            ->with(['organizer', 'society', 'schedules.venue', 'schedules.timeslot'])
             ->withCount(['registrations as registered_count' => fn ($query) => $query->where('status', RegistrationStatus::Registered)])
             ->where('status', EventStatus::Published)
             ->whereHas('schedules')
@@ -27,7 +27,7 @@ class EventDiscoveryController extends Controller
                 $query->where(function ($query) use ($term): void {
                     $query->where('title', 'like', $term)
                         ->orWhere('description', 'like', $term)
-                        ->orWhere('committee', 'like', $term);
+                        ->orWhereHas('society', fn ($query) => $query->where('name', 'like', $term));
                 });
             })
             ->when($request->filled('type'), fn ($query) => $query->where('event_type', $request->string('type')))
@@ -46,7 +46,7 @@ class EventDiscoveryController extends Controller
     public function show(Request $request, Event $event)
     {
         abort_unless($event->status === EventStatus::Published, 404);
-        $event->load(['organizer', 'schedules.venue', 'schedules.timeslot'])
+        $event->load(['organizer', 'society', 'schedules.venue', 'schedules.timeslot'])
             ->loadCount(['registrations as registered_count' => fn ($query) => $query->where('status', RegistrationStatus::Registered)]);
         $isRegistered = $event->registrations()->where('user_id', $request->user()->id)
             ->where('status', RegistrationStatus::Registered)->exists();

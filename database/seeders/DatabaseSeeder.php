@@ -9,6 +9,7 @@ use App\Models\Event;
 use App\Models\EventRegistration;
 use App\Models\EventSchedule;
 use App\Models\EventTask;
+use App\Models\Society;
 use App\Models\Timeslot;
 use App\Models\User;
 use App\Models\Venue;
@@ -26,9 +27,14 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $computingSociety = Society::updateOrCreate(
+            ['name' => 'Computing Society'],
+            ['description' => 'Student organizers for computing and technology events.', 'is_active' => true]
+        );
+
         foreach ([
             ['name' => 'Student Demo', 'email' => 'student@example.com', 'role' => UserRole::Student],
-            ['name' => 'Organizer Demo', 'email' => 'organizer@example.com', 'role' => UserRole::Organizer],
+            ['name' => 'Organizer Demo', 'email' => 'organizer@example.com', 'role' => UserRole::Organizer, 'society_id' => $computingSociety->id],
             ['name' => 'Administrator Demo', 'email' => 'admin@example.com', 'role' => UserRole::Administrator],
         ] as $account) {
             User::updateOrCreate(
@@ -71,8 +77,8 @@ class DatabaseSeeder extends Seeder
         $event = Event::updateOrCreate(
             ['organizer_id' => $organizer->id, 'title' => 'UAT Test Workshop'],
             [
+                'society_id' => $computingSociety->id,
                 'event_type' => 'Workshop',
-                'committee' => 'UAT Test Team',
                 'description' => 'A published, scheduled event for manual UAT.',
                 'capacity' => 80,
                 'duration_minutes' => 60,

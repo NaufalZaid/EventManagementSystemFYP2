@@ -4,17 +4,18 @@
     @csrf
     @if ($editing) @method('PUT') @endif
     <div class="grid gap-6 md:grid-cols-2">
+        @if(auth()->user()->hasRole('administrator'))
+            <div class="md:col-span-2"><label for="society_id" class="mb-2 block text-sm font-medium text-slate-700">Owning society</label><select id="society_id" name="society_id" class="block w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:ring-indigo-500"><option value="">University administration / no society</option>@foreach($societies as $society)<option value="{{ $society->id }}" @selected(old('society_id', $event->society_id ?? null) == $society->id)>{{ $society->name }}</option>@endforeach</select></div>
+        @else
+            <div class="md:col-span-2 rounded-xl border border-indigo-200 bg-indigo-50 p-4"><p class="text-xs font-semibold uppercase tracking-wide text-indigo-600">Owning society</p><p class="mt-1 font-medium text-indigo-950">{{ auth()->user()->society->name }}</p></div>
+        @endif
         <div class="md:col-span-2">
             <label for="title" class="mb-2 block text-sm font-medium text-slate-700">Event title</label>
             <input id="title" name="title" type="text" value="{{ old('title', $event->title ?? '') }}" required class="block w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:ring-indigo-500" placeholder="e.g. Technology Career Fair">
         </div>
-        <div>
+        <div class="md:col-span-2">
             <label for="event_type" class="mb-2 block text-sm font-medium text-slate-700">Event type</label>
             <input id="event_type" name="event_type" type="text" value="{{ old('event_type', $event->event_type ?? 'general') }}" required class="block w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:ring-indigo-500" placeholder="Workshop, seminar, competition">
-        </div>
-        <div>
-            <label for="committee" class="mb-2 block text-sm font-medium text-slate-700">Organizing committee</label>
-            <input id="committee" name="committee" type="text" value="{{ old('committee', $event->committee ?? '') }}" class="block w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:ring-indigo-500" placeholder="Society or committee name">
         </div>
         <div>
             <label for="capacity" class="mb-2 block text-sm font-medium text-slate-700">Expected capacity</label>

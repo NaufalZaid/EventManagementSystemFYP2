@@ -33,6 +33,8 @@
 
             if (auth()->user()->hasRole('administrator')) {
                 $navigation[] = ['label' => 'Proposals', 'route' => 'proposals.index', 'pattern' => 'proposals.*'];
+                $navigation[] = ['label' => 'Users', 'route' => 'users.index', 'pattern' => 'users.*'];
+                $navigation[] = ['label' => 'Societies', 'route' => 'societies.index', 'pattern' => 'societies.*'];
                 $navigation[] = ['label' => 'Venues', 'route' => 'venues.index', 'pattern' => 'venues.*'];
                 $navigation[] = ['label' => 'Timeslots', 'route' => 'timeslots.index', 'pattern' => 'timeslots.*'];
                 $navigation[] = ['label' => 'Schedules', 'route' => 'schedules.index', 'pattern' => 'schedules.*'];
@@ -65,7 +67,7 @@
                         @php($initials = collect(explode(' ', auth()->user()->name))->take(2)->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))->join(''))
                         <button id="user-menu-button" data-dropdown-toggle="user-menu" type="button" class="grid h-9 w-9 place-items-center rounded-full bg-slate-900 text-xs font-semibold text-white" aria-expanded="false">{{ $initials }}</button>
                         <div id="user-menu" class="z-50 hidden w-60 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white text-sm shadow-lg">
-                            <div class="px-4 py-3"><p class="font-semibold text-slate-900">{{ auth()->user()->name }}</p><p class="truncate text-xs text-slate-500">{{ auth()->user()->email }}</p><span class="mt-2 inline-flex rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">{{ auth()->user()->role->label() }}</span></div>
+                            <div class="px-4 py-3"><p class="font-semibold text-slate-900">{{ auth()->user()->name }}</p><p class="truncate text-xs text-slate-500">{{ auth()->user()->email }}</p><span class="mt-2 inline-flex rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">{{ auth()->user()->role->label() }}</span>@if(auth()->user()->society)<p class="mt-2 text-xs text-slate-500">{{ auth()->user()->society->name }}</p>@endif</div>
                             <form method="POST" action="{{ route('logout') }}" class="p-2">@csrf<button type="submit" class="w-full rounded-lg px-3 py-2 text-left font-medium text-red-600 hover:bg-red-50">Sign out</button></form>
                         </div>
                     @else

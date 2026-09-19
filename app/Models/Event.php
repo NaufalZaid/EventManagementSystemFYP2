@@ -4,15 +4,16 @@ namespace App\Models;
 
 use App\Enums\EventStatus;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class Event extends Model
 {
     protected $fillable = [
         'organizer_id',
+        'society_id',
         'title',
         'event_type',
-        'committee',
         'description',
         'capacity',
         'duration_minutes',
@@ -55,6 +56,33 @@ class Event extends Model
     public function organizer()
     {
         return $this->belongsTo(User::class, 'organizer_id');
+    }
+
+    public function society()
+    {
+        return $this->belongsTo(Society::class);
+    }
+
+    public function scopeAccessibleTo(Builder $query, User $user): Builder
+    {
+        if ($user->hasRole('administrator')) {
+            return $query;
+        }
+
+        if (! $user->society?->is_active) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereNotNull('society_id')->where('society_id', $user->society_id);
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (Event $event): void {
+            if ($event->society_id === null && $event->organizer_id !== null) {
+                $event->society_id = User::find($event->organizer_id)?->society_id;
+            }
+        });
     }
 
     public function reviewer()

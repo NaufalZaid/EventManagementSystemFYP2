@@ -10,7 +10,7 @@ class EventProposalController extends Controller
 {
     public function index()
     {
-        $events = Event::with(['organizer', 'reviewer'])
+        $events = Event::with(['organizer', 'society', 'reviewer'])
             ->whereIn('status', [EventStatus::Submitted, EventStatus::Approved, EventStatus::Rejected])
             ->latest('submitted_at')
             ->get();
@@ -20,7 +20,7 @@ class EventProposalController extends Controller
 
     public function submit(Request $request, Event $event)
     {
-        abort_unless($event->organizer_id === $request->user()->id, 403);
+        abort_unless($request->user()->canManageEvent($event), 403);
         abort_unless($event->status->isEditable(), 422, 'Only draft or rejected events can be submitted.');
 
         $event->update([

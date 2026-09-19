@@ -28,11 +28,11 @@ class ReportController extends Controller
 
         return response()->streamDownload(function () use ($events): void {
             $file = fopen('php://output', 'w');
-            fputcsv($file, ['Event', 'Organizer', 'Date', 'Venue', 'Capacity', 'Registrations', 'Attendance', 'Attendance Rate %', 'Schedule Source']);
+            fputcsv($file, ['Event', 'Society', 'Organizer', 'Date', 'Venue', 'Capacity', 'Registrations', 'Attendance', 'Attendance Rate %', 'Schedule Source']);
             foreach ($events as $event) {
                 $schedule = $event->schedules->first();
                 fputcsv($file, [
-                    $event->title, $event->organizer?->name, $schedule?->timeslot->slot_date->format('Y-m-d'),
+                    $event->title, $event->society?->name, $event->organizer?->name, $schedule?->timeslot->slot_date->format('Y-m-d'),
                     $schedule?->venue->name, $event->capacity, $event->registered_count, $event->attended_count,
                     $event->registered_count ? round($event->attended_count / $event->registered_count * 100, 2) : 0,
                     $schedule?->status,
@@ -86,12 +86,13 @@ class ReportController extends Controller
     {
         return Event::with([
             'organizer',
+            'society',
             'schedules' => fn ($query) => $query->whereHas('timeslot', fn ($query) => $query->whereBetween('slot_date', [$from, $to]))->with(['venue', 'timeslot']),
         ])->withCount([
             'registrations as registered_count' => fn ($query) => $query->where('status', RegistrationStatus::Registered),
             'attendanceRecords as attended_count',
         ])->whereHas('schedules.timeslot', fn ($query) => $query->whereBetween('slot_date', [$from, $to]))
-            ->when($request->user()->hasRole('organizer'), fn ($query) => $query->where('organizer_id', $request->user()->id))
+            ->accessibleTo($request->user())
             ->get()->sortBy(fn ($event) => $event->schedules->first()?->timeslot->slot_date);
     }
 

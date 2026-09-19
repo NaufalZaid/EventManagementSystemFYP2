@@ -69,7 +69,7 @@ class GeneticScheduleOptimizerTest extends TestCase
     {
         $organizer = User::factory()->organizer()->create();
         $venue = Venue::create(['name' => 'Only Hall', 'capacity' => 100, 'is_active' => true]);
-        $timeslot = Timeslot::create(['slot_date' => today()->addDays(7), 'start_time' => '09:00', 'end_time' => '11:00']);
+        $timeslot = Timeslot::create(['slot_date' => today()->next(Carbon::MONDAY), 'start_time' => '09:00', 'end_time' => '11:00']);
         $events = collect([$this->approvedEvent($organizer), $this->approvedEvent($organizer, ['title' => 'Second Event'])]);
 
         $result = app(GeneticScheduleOptimizer::class)->optimize(
