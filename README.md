@@ -35,8 +35,6 @@ The final system has three primary application roles:
 - **Event organizer:** proposes and manages events, requests venues, manages registrations and tasks, publishes announcements, generates attendance QR codes, and views event analytics.
 - **Administrator:** reviews proposals and venue requests, manages venue allocation and master data, monitors conflicts and venue usage, views reports, and audits administrative actions.
 
-The FYP1 scope also refers to venue managers as operational users. In the current target design, their venue-management responsibilities can be represented by the administrator role unless a separate role is introduced later.
-
 ## Functional Requirements
 
 | ID | Requirement | Expected behavior |
