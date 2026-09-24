@@ -6,14 +6,10 @@ use App\Enums\EventStatus;
 use App\Enums\RegistrationStatus;
 use App\Models\Event;
 use App\Models\Society;
-use App\Models\Venue;
-use App\Services\SchedulingTimePolicy;
 use Illuminate\Http\Request;
 
 class EventController extends Controller
 {
-    public function __construct(private readonly SchedulingTimePolicy $timePolicy) {}
-
     public function index(Request $request)
     {
         $events = Event::with(['organizer', 'society', 'schedules.venue', 'schedules.timeslot'])
@@ -47,7 +43,7 @@ class EventController extends Controller
         ]));
 
         $message = $isAdministrator
-            ? 'Event created and approved. It can now be scheduled.'
+            ? 'Event created and approved. Its organizer can now enter the scheduling requirements.'
             : 'Draft created. Review it, then submit it for approval.';
 
         return redirect()->route('events.edit', $event)->with('success', $message);
@@ -92,32 +88,8 @@ class EventController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'event_type' => ['required', 'string', 'max:100'],
             'description' => ['nullable', 'string'],
-            'capacity' => ['required', 'integer', 'min:1'],
-            'duration_minutes' => [
-                'required',
-                'integer',
-                'min:60',
-                'multiple_of:60',
-                'max:'.($request->boolean('is_outside_working_hours') ? 900 : 600),
-            ],
-            'is_outside_working_hours' => ['nullable', 'boolean'],
-            'preferred_venue_id' => ['nullable', 'exists:venues,id'],
-            'preferred_date' => ['nullable', 'date'],
-            'preferred_start_time' => ['nullable', 'date_format:H:i'],
             'society_id' => ['nullable', 'exists:societies,id'],
         ]);
-
-        $validated['is_outside_working_hours'] = $request->boolean('is_outside_working_hours');
-
-        if (! empty($validated['preferred_start_time'])) {
-            $startHour = (int) substr($validated['preferred_start_time'], 0, 2);
-            $this->timePolicy->validate(
-                $validated['preferred_date'] ?? now()->toDateString(),
-                $validated['preferred_start_time'],
-                sprintf('%02d:00', $startHour + 1),
-                $validated['is_outside_working_hours']
-            );
-        }
 
         return $validated;
     }
@@ -141,7 +113,6 @@ class EventController extends Controller
     private function formData(): array
     {
         return [
-            'venues' => Venue::where('is_active', true)->orderBy('name')->get(),
             'societies' => Society::where('is_active', true)->orderBy('name')->get(),
         ];
     }

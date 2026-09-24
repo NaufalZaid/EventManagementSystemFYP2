@@ -15,13 +15,9 @@ class PhaseZeroUiTest extends TestCase
     {
         return [
             'event list' => ['/events'],
-            'event form' => ['/events/create'],
             'venue list' => ['/venues'],
             'venue form' => ['/venues/create'],
-            'timeslot list' => ['/timeslots'],
-            'timeslot form' => ['/timeslots/create'],
             'schedule list' => ['/schedules'],
-            'schedule form' => ['/schedules/create'],
         ];
     }
 

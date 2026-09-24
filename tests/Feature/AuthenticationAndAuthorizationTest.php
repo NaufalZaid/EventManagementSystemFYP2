@@ -92,7 +92,6 @@ class AuthenticationAndAuthorizationTest extends TestCase
 
         $this->get('/events')->assertOk();
         $this->get('/venues')->assertOk();
-        $this->get('/timeslots')->assertOk();
         $this->get('/schedules')->assertOk();
     }
 

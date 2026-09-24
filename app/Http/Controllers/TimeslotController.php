@@ -34,7 +34,7 @@ class TimeslotController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'slot_date' => 'required|date',
+            'slot_date' => 'required|date|after_or_equal:today',
             'start_time' => ['required', 'date_format:H:i'],
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
             'is_outside_working_hours' => ['nullable', 'boolean'],
@@ -69,7 +69,7 @@ class TimeslotController extends Controller
     public function update(Request $request, Timeslot $timeslot)
     {
         $validated = $request->validate([
-            'slot_date' => 'required|date',
+            'slot_date' => 'required|date|after_or_equal:today',
             'start_time' => ['required', 'date_format:H:i'],
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
             'is_outside_working_hours' => ['nullable', 'boolean'],

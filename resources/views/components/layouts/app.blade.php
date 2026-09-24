@@ -26,7 +26,6 @@
 
             if (auth()->user()->hasRole('organizer', 'administrator')) {
                 $navigation[] = ['label' => 'Events', 'route' => 'events.index', 'pattern' => 'events.*'];
-                $navigation[] = ['label' => 'Venue Requests', 'route' => 'venue-requests.index', 'pattern' => 'venue-requests.*'];
                 $navigation[] = ['label' => 'Analytics', 'route' => 'analytics.index', 'pattern' => 'analytics.*'];
                 $navigation[] = ['label' => 'Reports', 'route' => 'reports.index', 'pattern' => 'reports.*'];
             }
@@ -36,9 +35,7 @@
                 $navigation[] = ['label' => 'Users', 'route' => 'users.index', 'pattern' => 'users.*'];
                 $navigation[] = ['label' => 'Societies', 'route' => 'societies.index', 'pattern' => 'societies.*'];
                 $navigation[] = ['label' => 'Venues', 'route' => 'venues.index', 'pattern' => 'venues.*'];
-                $navigation[] = ['label' => 'Timeslots', 'route' => 'timeslots.index', 'pattern' => 'timeslots.*'];
-                $navigation[] = ['label' => 'Schedules', 'route' => 'schedules.index', 'pattern' => 'schedules.*'];
-                $navigation[] = ['label' => 'GA Optimizer', 'route' => 'optimizer.index', 'pattern' => 'optimizer.*'];
+                $navigation[] = ['label' => 'Automatic Allocations', 'route' => 'schedules.index', 'pattern' => 'schedules.*'];
                 $navigation[] = ['label' => 'GA Performance Tests', 'route' => 'experiments.index', 'pattern' => 'experiments.*'];
                 $navigation[] = ['label' => 'Feedback Results', 'route' => 'evaluation.results', 'pattern' => 'evaluation.results'];
             }

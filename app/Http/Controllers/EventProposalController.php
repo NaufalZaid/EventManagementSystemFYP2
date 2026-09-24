@@ -44,7 +44,7 @@ class EventProposalController extends Controller
             'rejection_reason' => null,
         ]);
 
-        return back()->with('success', 'Event proposal approved. The organizer may now request a venue.');
+        return back()->with('success', 'Event proposal approved. The organizer may now enter its schedule requirements for automatic venue allocation.');
     }
 
     public function reject(Request $request, Event $event)

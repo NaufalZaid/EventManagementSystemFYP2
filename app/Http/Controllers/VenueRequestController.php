@@ -68,7 +68,7 @@ class VenueRequestController extends Controller
             'event_id' => ['required', 'exists:events,id'],
             'venue_id' => ['required', 'exists:venues,id'],
             'timeslot_id' => ['nullable', 'exists:timeslots,id'],
-            'slot_date' => ['required_without:timeslot_id', 'date'],
+            'slot_date' => ['required_without:timeslot_id', 'date', 'after_or_equal:today'],
             'start_time' => ['required_without:timeslot_id', 'date_format:H:i'],
             'end_time' => ['required_without:timeslot_id', 'date_format:H:i'],
             'organizer_notes' => ['nullable', 'string', 'max:2000'],

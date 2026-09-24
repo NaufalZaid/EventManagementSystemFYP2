@@ -5,14 +5,11 @@ namespace App\Http\Controllers;
 use App\Enums\EventStatus;
 use App\Enums\RegistrationStatus;
 use App\Enums\UserRole;
-use App\Enums\VenueRequestStatus;
 use App\Models\Event;
 use App\Models\EventSchedule;
 use App\Models\EventTask;
-use App\Models\Timeslot;
 use App\Models\User;
 use App\Models\Venue;
-use App\Models\VenueRequest;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -35,7 +32,7 @@ class DashboardController extends Controller
             ]),
             UserRole::Organizer => view('dashboards.organizer', [
                 'eventCount' => Event::accessibleTo($request->user())->count(),
-                'scheduledCount' => Event::accessibleTo($request->user())->where('status', EventStatus::Scheduled)->count(),
+                'scheduledCount' => Event::accessibleTo($request->user())->whereIn('status', [EventStatus::Scheduled, EventStatus::Published])->count(),
                 'pendingCount' => Event::accessibleTo($request->user())->where('status', EventStatus::Submitted)->count(),
                 'openTaskCount' => EventTask::whereHas('event', fn ($query) => $query->accessibleTo($request->user()))->whereNull('completed_at')->count(),
             ]),
@@ -43,10 +40,8 @@ class DashboardController extends Controller
                 'userCount' => User::count(),
                 'eventCount' => Event::count(),
                 'venueCount' => Venue::count(),
-                'timeslotCount' => Timeslot::count(),
                 'scheduleCount' => EventSchedule::count(),
                 'proposalCount' => Event::where('status', EventStatus::Submitted)->count(),
-                'venueRequestCount' => VenueRequest::where('status', VenueRequestStatus::Pending)->count(),
             ]),
         };
     }

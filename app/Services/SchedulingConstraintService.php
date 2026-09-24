@@ -26,10 +26,11 @@ class SchedulingConstraintService
                 $endsAt->format('H:i:s'),
                 $event->is_outside_working_hours
             );
-        } catch (ValidationException) {
-            $errors['timeslot_id'] = $event->is_outside_working_hours
+        } catch (ValidationException $exception) {
+            $policyErrors = $exception->errors();
+            $errors['timeslot_id'] = $policyErrors['slot_date'][0] ?? ($event->is_outside_working_hours
                 ? 'The timeslot must use whole hours between 08:00 and 23:00.'
-                : 'The timeslot must use whole hours between 08:00 and 18:00.';
+                : 'The timeslot must use whole hours between 08:00 and 18:00.');
         }
 
         if (! $venue->is_active) {
@@ -83,7 +84,7 @@ class SchedulingConstraintService
     {
         [$startsAt, $endsAt] = $this->boundaries($timeslot);
 
-        if ($startsAt->isWeekend()) {
+        if ($startsAt->lessThanOrEqualTo(now()) || $startsAt->isWeekend()) {
             return collect();
         }
 

@@ -129,21 +129,31 @@ class DatabaseSeeder extends Seeder
     }
 
     /**
-     * Seed 120 reusable slots: eight time ranges on each of the next 15 weekdays.
+     * Seed realistic event-length slots on each of the next 15 weekdays.
+     *
+     * Short talks and meetings use one-hour slots, most workshops use two or
+     * three hours, and only activities such as hackathons use longer blocks.
      *
      * @return array<string, Timeslot>
      */
     private function seedTimeslots(): array
     {
         $timeRanges = [
-            ['08:00:00', '10:00:00'],
+            ['09:00:00', '10:00:00'],
             ['10:00:00', '12:00:00'],
-            ['12:00:00', '14:00:00'],
+            ['11:00:00', '12:00:00'],
+            ['13:00:00', '14:00:00'],
+            ['09:00:00', '11:00:00'],
+            ['13:00:00', '15:00:00'],
             ['14:00:00', '16:00:00'],
             ['16:00:00', '18:00:00'],
+            ['09:00:00', '12:00:00'],
+            ['14:00:00', '17:00:00'],
+            ['18:00:00', '21:00:00'],
             ['09:00:00', '13:00:00'],
             ['13:00:00', '17:00:00'],
-            ['18:00:00', '21:00:00'],
+            ['09:00:00', '15:00:00'],
+            ['09:00:00', '17:00:00'],
         ];
 
         $dates = [];
@@ -183,17 +193,17 @@ class DatabaseSeeder extends Seeder
     {
         $definitions = [
             'completed' => ['business_organizer', 'business', 'Graduate Career Panel', 'Career', 180, 120, 'auditorium', 'past_event', EventStatus::Completed],
-            'ai_workshop' => ['organizer', 'computing', 'Introduction to Artificial Intelligence', 'Workshop', 45, 120, 'lab', 'day_1_range_0', EventStatus::Published],
-            'pitching' => ['business_organizer', 'business', 'Startup Pitching Masterclass', 'Seminar', 60, 120, 'seminar', 'day_2_range_3', EventStatus::Published],
-            'sports_day' => ['sports_organizer', 'sports', 'Interfaculty Sports Carnival', 'Sports', 400, 240, 'sports', 'day_3_range_5', EventStatus::Published],
-            'culture_night' => ['arts_organizer', 'arts', 'Campus Cultural Night', 'Performance', 280, 180, 'hall', 'day_4_range_7', EventStatus::Scheduled],
-            'art_exhibition' => ['arts_organizer', 'arts', 'Student Art Exhibition', 'Exhibition', 90, 240, 'gallery', 'day_5_range_6', EventStatus::Scheduled],
-            'hackathon' => ['organizer', 'computing', 'Sustainable Campus Hackathon', 'Competition', 150, 240, 'hall', 'day_7_range_5', EventStatus::Approved],
-            'charity_run' => ['sports_organizer', 'sports', 'Charity Fun Run', 'Community', 350, 120, 'sports', 'day_8_range_0', EventStatus::Approved],
+            'ai_workshop' => ['organizer', 'computing', 'Introduction to Artificial Intelligence', 'Workshop', 45, 120, 'lab', 'day_1_range_1', EventStatus::Published],
+            'pitching' => ['business_organizer', 'business', 'Startup Pitching Masterclass', 'Seminar', 60, 120, 'seminar', 'day_2_range_6', EventStatus::Published],
+            'sports_day' => ['sports_organizer', 'sports', 'Interfaculty Sports Carnival', 'Sports', 400, 240, 'sports', 'day_3_range_11', EventStatus::Published],
+            'culture_night' => ['arts_organizer', 'arts', 'Campus Cultural Night', 'Performance', 280, 180, 'hall', 'day_4_range_10', EventStatus::Published],
+            'art_exhibition' => ['arts_organizer', 'arts', 'Student Art Exhibition', 'Exhibition', 90, 180, 'gallery', 'day_5_range_9', EventStatus::Published],
+            'hackathon' => ['organizer', 'computing', 'Sustainable Campus Hackathon', 'Competition', 150, 480, 'hall', 'day_7_range_14', EventStatus::Approved],
+            'charity_run' => ['sports_organizer', 'sports', 'Charity Fun Run', 'Community', 350, 180, 'sports', 'day_8_range_8', EventStatus::Approved],
             'green_forum' => ['business_organizer', 'business', 'Green Entrepreneurship Forum', 'Forum', 150, 120, 'auditorium', 'day_10_range_1', EventStatus::Submitted],
-            'esports' => ['organizer', 'computing', 'Campus Esports Tournament', 'Competition', 120, 240, 'auditorium', 'day_11_range_5', EventStatus::Rejected],
-            'bootcamp' => ['organizer', 'computing', 'Full-Stack Development Bootcamp', 'Workshop', 40, 240, 'lab', 'day_12_range_6', EventStatus::Draft],
-            'wellness' => ['sports_organizer', 'sports', 'Student Wellness Seminar', 'Seminar', 100, 120, 'auditorium', 'day_14_range_1', EventStatus::Approved],
+            'esports' => ['organizer', 'computing', 'Campus Esports Tournament', 'Competition', 120, 240, 'auditorium', 'day_11_range_12', EventStatus::Rejected],
+            'bootcamp' => ['organizer', 'computing', 'Full-Stack Development Bootcamp', 'Workshop', 40, 360, 'lab', 'day_12_range_13', EventStatus::Draft],
+            'wellness' => ['sports_organizer', 'sports', 'Student Wellness Seminar', 'Seminar', 100, 60, 'auditorium', 'day_14_range_2', EventStatus::Approved],
         ];
 
         $events = [];
@@ -290,9 +300,9 @@ class DatabaseSeeder extends Seeder
     private function seedStudentCommitments(array $users, array $timeslots): void
     {
         $definitions = [
-            ['student', 'Software Engineering Lecture', 'class', 'day_1_range_3'],
+            ['student', 'Software Engineering Lecture', 'class', 'day_1_range_6'],
             ['student', 'Final Year Project Meeting', 'meeting', 'day_3_range_1'],
-            ['student_2', 'Database Systems Test', 'test', 'day_4_range_3'],
+            ['student_2', 'Database Systems Test', 'test', 'day_4_range_5'],
             ['student_3', 'Library Study Session', 'study', 'day_6_range_1'],
         ];
 
@@ -310,7 +320,7 @@ class DatabaseSeeder extends Seeder
 
     private function seedVenueBlackouts(array $venues, array $timeslots): void
     {
-        $slot = $timeslots['day_9_range_5'];
+        $slot = $timeslots['day_9_range_11'];
         $startsAt = Carbon::parse($slot->slot_date->toDateString().' '.$slot->start_time);
 
         VenueBlackout::updateOrCreate(

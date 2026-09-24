@@ -3,13 +3,11 @@
 namespace Tests\Feature;
 
 use App\Enums\EventStatus;
-use App\Enums\VenueRequestStatus;
 use App\Models\Event;
 use App\Models\Timeslot;
 use App\Models\User;
 use App\Models\Venue;
-use App\Models\VenueBlackout;
-use App\Models\VenueRequest;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -17,133 +15,90 @@ class EventApprovalWorkflowTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_administrator_created_events_are_approved_automatically(): void
-    {
-        $administrator = User::factory()->administrator()->create();
-
-        $this->actingAs($administrator)->post(route('events.store'), [
-            'title' => 'Administrator Created Event',
-            'event_type' => 'workshop',
-            'committee' => 'Administration',
-            'description' => 'Created directly by an administrator.',
-            'capacity' => 60,
-            'duration_minutes' => 120,
-        ])->assertSessionHasNoErrors();
-
-        $event = Event::where('title', 'Administrator Created Event')->firstOrFail();
-        $this->assertSame(EventStatus::Approved, $event->status);
-        $this->assertSame($administrator->id, $event->reviewed_by);
-        $this->assertNotNull($event->submitted_at);
-        $this->assertNotNull($event->reviewed_at);
-    }
-
-    public function test_organizer_can_only_manage_their_own_event(): void
-    {
-        $owner = User::factory()->organizer()->create();
-        $otherOrganizer = User::factory()->organizer()->create();
-        $event = $this->event($owner);
-
-        $this->actingAs($otherOrganizer)->get(route('events.edit', $event))->assertForbidden();
-        $this->actingAs($otherOrganizer)->post(route('events.submit', $event))->assertForbidden();
-    }
-
-    public function test_event_can_move_from_draft_to_an_approved_venue_schedule(): void
+    public function test_organizer_submits_proposal_before_entering_schedule_requirements(): void
     {
         $organizer = User::factory()->organizer()->create();
-        $administrator = User::factory()->administrator()->create();
-        $event = $this->event($organizer);
-        $venue = Venue::create(['name' => 'Main Hall', 'capacity' => 250, 'is_active' => true]);
-        $timeslot = Timeslot::create(['slot_date' => '2026-09-10', 'start_time' => '09:00', 'end_time' => '11:00']);
+
+        $this->actingAs($organizer)->post(route('events.store'), [
+            'title' => 'Technology Showcase',
+            'event_type' => 'exhibition',
+            'description' => 'Student technology projects.',
+        ])->assertSessionHasNoErrors();
+
+        $event = Event::firstOrFail();
+        $this->assertSame(EventStatus::Draft, $event->status);
+        $this->assertSame(0, $event->capacity);
+        $this->assertNull($event->duration_minutes);
 
         $this->actingAs($organizer)->post(route('events.submit', $event))->assertRedirect(route('events.index'));
         $this->assertSame(EventStatus::Submitted, $event->fresh()->status);
+    }
+
+    public function test_approved_event_is_automatically_allocated_to_smallest_suitable_venue_and_published(): void
+    {
+        $organizer = User::factory()->organizer()->create();
+        $administrator = User::factory()->administrator()->create();
+        $event = $this->event($organizer, EventStatus::Submitted);
+        $small = Venue::create(['name' => 'Small Room', 'capacity' => 40, 'is_active' => true]);
+        $bestFit = Venue::create(['name' => 'Seminar Hall', 'capacity' => 80, 'is_active' => true]);
+        Venue::create(['name' => 'Grand Hall', 'capacity' => 300, 'is_active' => true]);
 
         $this->actingAs($administrator)->patch(route('proposals.approve', $event))->assertSessionHasNoErrors();
-        $this->assertSame(EventStatus::Approved, $event->fresh()->status);
 
-        $this->actingAs($organizer)->post(route('venue-requests.store'), [
-            'event_id' => $event->id,
-            'venue_id' => $venue->id,
-            'timeslot_id' => $timeslot->id,
-            'organizer_notes' => 'Projector required',
-        ])->assertRedirect(route('venue-requests.index'));
+        $date = today()->next(Carbon::MONDAY)->toDateString();
+        $this->actingAs($organizer)->post(route('events.allocation.store', $event), [
+            'slot_date' => $date,
+            'start_time' => '10:00',
+            'duration_minutes' => 120,
+            'capacity' => 60,
+        ])->assertRedirect(route('events.index'))->assertSessionHasNoErrors();
 
-        $venueRequest = VenueRequest::firstOrFail();
-        $this->actingAs($administrator)->patch(route('venue-requests.approve', $venueRequest), [
-            'admin_notes' => 'Projector confirmed',
-        ])->assertSessionHasNoErrors();
-
-        $this->assertSame(VenueRequestStatus::Approved, $venueRequest->fresh()->status);
-        $this->assertSame(EventStatus::Scheduled, $event->fresh()->status);
         $this->assertDatabaseHas('event_schedules', [
             'event_id' => $event->id,
-            'venue_id' => $venue->id,
-            'timeslot_id' => $timeslot->id,
+            'venue_id' => $bestFit->id,
+            'status' => 'generated',
         ]);
+        $this->assertDatabaseMissing('event_schedules', ['event_id' => $event->id, 'venue_id' => $small->id]);
+        $this->assertTrue(Timeslot::whereDate('slot_date', $date)
+            ->where('start_time', '10:00:00')->where('end_time', '12:00:00')->exists());
+        $event = $event->fresh();
+        $this->assertSame(EventStatus::Published, $event->status);
+        $this->assertSame(60, $event->capacity);
+        $this->assertSame(120, $event->duration_minutes);
     }
 
-    public function test_venue_request_rejects_a_blackout_conflict(): void
+    public function test_event_must_be_approved_before_automatic_allocation(): void
     {
         $organizer = User::factory()->organizer()->create();
-        $event = $this->event($organizer, EventStatus::Approved);
-        $venue = Venue::create(['name' => 'Lab A', 'capacity' => 100, 'is_active' => true]);
-        $timeslot = Timeslot::create(['slot_date' => '2026-09-10', 'start_time' => '09:00', 'end_time' => '11:00']);
-        VenueBlackout::create([
-            'venue_id' => $venue->id,
-            'starts_at' => '2026-09-10 10:00:00',
-            'ends_at' => '2026-09-10 12:00:00',
-            'reason' => 'Maintenance',
-        ]);
+        $event = $this->event($organizer, EventStatus::Draft);
+        Venue::create(['name' => 'Available Hall', 'capacity' => 100, 'is_active' => true]);
 
-        $this->actingAs($organizer)->from(route('venue-requests.create'))->post(route('venue-requests.store'), [
-            'event_id' => $event->id,
-            'venue_id' => $venue->id,
-            'timeslot_id' => $timeslot->id,
-        ])->assertRedirect(route('venue-requests.create'))->assertSessionHasErrors('venue_id');
+        $this->actingAs($organizer)->post(route('events.allocation.store', $event), [
+            'slot_date' => today()->next(Carbon::MONDAY)->toDateString(),
+            'start_time' => '10:00',
+            'duration_minutes' => 120,
+            'capacity' => 60,
+        ])->assertStatus(422);
 
-        $this->assertDatabaseCount('venue_requests', 0);
+        $this->assertDatabaseCount('event_schedules', 0);
     }
 
-    public function test_venue_request_rejects_insufficient_capacity_and_duration(): void
+    public function test_organizer_cannot_allocate_another_societys_event(): void
     {
-        $organizer = User::factory()->organizer()->create();
-        $event = $this->event($organizer, EventStatus::Approved);
-        $venue = Venue::create(['name' => 'Small Room', 'capacity' => 50, 'is_active' => true]);
-        $timeslot = Timeslot::create(['slot_date' => '2026-09-10', 'start_time' => '09:00', 'end_time' => '09:30']);
+        $owner = User::factory()->organizer()->create();
+        $otherOrganizer = User::factory()->organizer()->create();
+        $event = $this->event($owner, EventStatus::Approved);
 
-        $this->actingAs($organizer)->post(route('venue-requests.store'), [
-            'event_id' => $event->id,
-            'venue_id' => $venue->id,
-            'timeslot_id' => $timeslot->id,
-        ])->assertSessionHasErrors(['venue_id', 'timeslot_id']);
+        $this->actingAs($otherOrganizer)->get(route('events.allocation.create', $event))->assertForbidden();
     }
 
-    public function test_organizer_cannot_submit_a_second_active_venue_request_for_the_same_event(): void
-    {
-        $organizer = User::factory()->organizer()->create();
-        $event = $this->event($organizer, EventStatus::Approved);
-        $venue = Venue::create(['name' => 'UAT Hall', 'capacity' => 150, 'is_active' => true]);
-        $timeslot = Timeslot::create(['slot_date' => '2026-09-10', 'start_time' => '09:00', 'end_time' => '11:00']);
-        $requestData = ['event_id' => $event->id, 'venue_id' => $venue->id, 'timeslot_id' => $timeslot->id];
-
-        $this->actingAs($organizer)->post(route('venue-requests.store'), $requestData)
-            ->assertRedirect(route('venue-requests.index'));
-        $this->actingAs($organizer)->post(route('venue-requests.store'), $requestData)
-            ->assertStatus(422);
-
-        $this->assertDatabaseCount('venue_requests', 1);
-    }
-
-    private function event(User $organizer, EventStatus $status = EventStatus::Draft): Event
+    private function event(User $organizer, EventStatus $status): Event
     {
         return Event::create([
             'organizer_id' => $organizer->id,
             'title' => 'Technology Showcase',
             'event_type' => 'exhibition',
-            'committee' => 'Tech Society',
             'description' => 'Student technology projects.',
-            'capacity' => 100,
-            'duration_minutes' => 90,
             'status' => $status,
         ]);
     }

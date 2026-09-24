@@ -20,6 +20,9 @@ class SchedulingTimePolicy
         $closingHour = $outsideWorkingHours ? self::EXTENDED_CLOSING_HOUR : self::NORMAL_CLOSING_HOUR;
         $errors = [];
 
+        if ($startsAt->lessThanOrEqualTo(now())) {
+            $errors['slot_date'] = 'The event must be scheduled for a future date and time.';
+        }
         if ($startsAt->isWeekend()) {
             $errors['slot_date'] = 'Weekends are blackout periods. Select a weekday.';
         }

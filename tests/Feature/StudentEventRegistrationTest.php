@@ -17,16 +17,6 @@ class StudentEventRegistrationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_administrator_can_publish_a_scheduled_event(): void
-    {
-        $administrator = User::factory()->administrator()->create();
-        $event = $this->scheduledEvent(status: EventStatus::Scheduled);
-
-        $this->actingAs($administrator)->patch(route('events.publish', $event))->assertSessionHasNoErrors();
-
-        $this->assertSame(EventStatus::Published, $event->fresh()->status);
-    }
-
     public function test_student_can_search_published_events_but_cannot_see_unpublished_events(): void
     {
         $student = User::factory()->create();

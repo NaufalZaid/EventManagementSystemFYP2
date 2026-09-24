@@ -2,7 +2,7 @@
 
 A web-based Event Management System (EMS) for Multimedia University (MMU), developed as Final Year Project 2. The system is intended to centralize university event discovery, registration, planning, attendance, venue management, and reporting while using a Genetic Algorithm (GA) to generate optimized, conflict-free event schedules.
 
-This repository currently contains a working Laravel prototype with role-based workflows, student participation, secure QR attendance, date-filtered reporting, CSV evidence exports, a consent-based usability survey, and a Genetic Algorithm that generates, benchmarks, and safely applies optimized schedules.
+This repository currently contains a working Laravel prototype with role-based workflows, automatic conflict-aware venue allocation, student participation, secure QR attendance, date-filtered reporting, CSV evidence exports, a consent-based usability survey, and reproducible Genetic Algorithm experiments.
 
 ## Project Information
 
@@ -32,8 +32,8 @@ The requirements were elicited in FYP1 through a questionnaire with 30 responden
 The final system has three primary application roles:
 
 - **Student:** discovers events, registers or cancels participation, receives notifications, maintains a personal calendar, records attendance, and views participation history.
-- **Event organizer:** proposes and manages events, requests venues, manages registrations and tasks, publishes announcements, generates attendance QR codes, and views event analytics.
-- **Administrator:** reviews proposals and venue requests, manages venue allocation and master data, monitors conflicts and venue usage, views reports, and audits administrative actions.
+- **Event organizer:** proposes events and, after approval, enters the date, start time, duration, and capacity for automatic venue allocation; organizers also manage tasks, announcements, attendance, and analytics.
+- **Administrator:** approves or rejects event proposals, maintains venues and blackout periods, and reviews allocation and reporting evidence.
 
 ## Functional Requirements
 
@@ -45,7 +45,7 @@ The final system has three primary application roles:
 | FR-04 | Notifications | The system stores in-app notifications, supports push notifications, announces event changes, and sends reminders one week, one day, and one hour before an event. |
 | FR-05 | Personal scheduling | Registered events are added to an in-app calendar. Students can add personal commitments such as classes or tests to identify clashes. |
 | FR-06 | Attendance | Organizers can generate an on-site QR code, attendees can record attendance, and students can view attendance history. |
-| FR-07 | Venue management | Organizers and administrators can check availability. Organizers request a venue and administrators approve or reject the request without double-booking it. |
+| FR-07 | Venue management | Administrators maintain venues and blackout periods. After proposal approval, the system automatically selects the smallest suitable conflict-free venue from the organizer's requirements. |
 | FR-08 | Event planning | Organizers can maintain event drafts, proposals, registrations, attendance, announcements, and preparation-task checklists. |
 | FR-09 | Analytics and reporting | Organizers and administrators can view registration and attendance figures, while administrators can review venue-utilization reports. |
 | FR-10 | Automated scheduling | A GA assigns events to suitable venues and timeslots while respecting the defined hard constraints and optimizing soft preferences. |
@@ -113,11 +113,10 @@ This table distinguishes repository functionality from the target requirements i
 | Laravel application setup | Implemented | Laravel 13 application with Blade and MySQL configuration. |
 | Responsive UI foundation | Implemented | Shared Blade layout, Flowbite components, responsive sidebar, forms, tables, alerts, and empty states. |
 | MySQL database | Implemented | Database and framework/application migrations are configured. |
-| Event management | Implemented | Organizer-owned drafts include type, committee, capacity, duration, lifecycle state, review history, and optimizer preferences. |
+| Event management | Implemented | Organizer-owned proposals collect descriptive details first; scheduling requirements are collected only after administrator approval. |
 | Event proposal workflow | Implemented | Organizers submit drafts; administrators approve them or return them with a reason. |
 | Venue management | Implemented | CRUD includes capacity, location, active/inactive availability, and blackout periods. |
-| Timeslot management | Implemented | Basic CRUD with date and start/end validation. |
-| Manual schedule management | Implemented | Assigns an event to a venue and timeslot. |
+| Automatic schedule management | Implemented | Approved events are allocated automatically from organizer-supplied date, start time, duration, and capacity. |
 | Venue capacity validation | Implemented | A schedule is rejected when event capacity exceeds venue capacity. |
 | Venue overlap detection | Implemented | Overlapping use of the same venue on the same date is rejected. |
 | One schedule per event | Implemented | Application validation prevents duplicate event assignments. |
@@ -125,7 +124,7 @@ This table distinguishes repository functionality from the target requirements i
 | Venue blackout validation | Implemented | Assignments overlapping a venue blackout are rejected. |
 | Authentication | Implemented | Student registration, login, logout, password recovery, secure sessions, and login throttling are available. |
 | Role-based access control | Implemented | Student, organizer, and administrator roles have separate dashboards and server-enforced route permissions. |
-| Event publication | Implemented | Administrators can publish scheduled events to the student catalogue or unpublish them while preserving registrations. |
+| Event publication | Implemented | A successfully allocated event is published automatically to the student catalogue. |
 | Student event discovery and registration | Implemented | Students can search and filter published events, view details, register, cancel, and review `My Events`. |
 | Registration capacity protection | Implemented | Transactional registration rejects full events and preserves one registration record per student/event. |
 | Student schedule-clash detection | Implemented | Registration is rejected when a published event overlaps another confirmed event in `My Events`. |
@@ -134,11 +133,10 @@ This table distinguishes repository functionality from the target requirements i
 | Personal commitment clashes | Implemented | Overlapping calendar entries are highlighted; event registration is blocked when it overlaps a recorded commitment. |
 | QR attendance and history | Implemented | Organizers open encrypted, time-limited QR sessions; registered students confirm once and receive an attendance history. |
 | Manual attendance fallback | Implemented | Authorized organizers can record a registered student during an active session when QR scanning is unavailable. |
-| Venue request and approval workflow | Implemented | Organizers request a venue and timeslot for approved events; administrator approval creates the schedule transactionally. |
+| Automatic venue allocation | Implemented | The system excludes inactive, undersized, booked, and blacked-out venues, then transactionally assigns the smallest suitable venue. |
 | Organizer planning workflow | Implemented for current scope | Event planning workspaces provide priority tasks, due dates, completion tracking, and participant announcements. |
 | Analytics and utilization reports | Implemented for current scope | Date-filtered event-performance and venue-utilization reports calculate registrations, attendance, allocated capacity, and occupied minutes, with organizer ownership scoping and CSV export. |
-| Genetic Algorithm optimizer | Implemented | Population initialization, tournament selection, crossover, mutation, elitism, fitness scoring, run persistence, and transactional application are available. |
-| Automated/manual comparison | Implemented for current scope | Administrators compare assignment count, conflicts, capacity utilization, unused seats, fitness, and execution time. Seeded repeated experiments provide reproducible benchmark evidence. |
+| Genetic Algorithm evaluation | Implemented | Population initialization, tournament selection, crossover, mutation, elitism, fitness scoring, and reproducible experiments are retained for evaluation without a separate admin scheduling step. |
 | User evaluation | Implemented for current scope | Every authenticated role can submit one consent-based 1–5 usability response and update it; administrators see aggregated averages and role summaries. |
 | Automated tests | Implemented for current scope | Authentication, authorization, workflows, scoping, scheduling constraints, seeded GA reproducibility, reports, CSV exports, and evaluation consent are covered. |
 
@@ -267,14 +265,10 @@ The application is normally available at `http://127.0.0.1:8000`.
 | `/attendance-history` | Student’s confirmed attendance history |
 | `/check-in/{token}` | Time-limited student attendance confirmation reached through QR scanning |
 | `/proposals` | Administrator event-proposal review queue |
-| `/venue-requests` | Organizer and administrator venue-request workflow |
+| `/events/{event}/allocate` | Organizer scheduling requirements and automatic venue allocation |
 | `/venues` | Venue CRUD |
 | `/venues/{venue}/blackouts` | Administrator venue availability blocks |
-| `/timeslots` | Timeslot CRUD |
-| `/schedules` | Manual schedule CRUD |
-| `/optimizer` | Administrator GA configuration and run history |
-| `/optimizer/{run}` | Persisted candidate assignments, fitness, and safe apply action |
-| `/optimizer/comparison` | Manual-versus-generated schedule metrics |
+| `/schedules` | Read-only automatic allocation review |
 | `/experiments` | Administrator-controlled repeated GA benchmarks with reproducible seeds |
 | `/reports` | Date-filtered event-performance and venue-utilization evidence |
 | `/reports/events.csv` | Role-scoped event report export |
@@ -284,7 +278,7 @@ The application is normally available at `http://127.0.0.1:8000`.
 | `/evaluation-results` | Administrator aggregate evaluation results |
 | `/up` | Laravel health check |
 
-The management routes require authentication. Organizers can manage only their own events, submit proposals, and request venues for approved events. Administrators review proposals and venue requests and manage all events, venues, blackouts, timeslots, and schedules.
+The management routes require authentication. Organizers manage their society's proposals and enter scheduling requirements only after approval. Administrators approve proposals and maintain venues and blackout periods; they cannot manually create schedules.
 
 ### Development accounts
 
@@ -341,11 +335,11 @@ The following are outside the original scope:
 ## Recommended Implementation Roadmap
 
 1. **Completed:** Add authentication, the three user roles, protected routes, and role-specific dashboard foundations.
-2. **Completed:** Expand the event and venue domain with organizer ownership, lifecycle states, proposals, venue requests, availability, blackout dates, administrator approval, and a shared scheduling-constraint service.
+2. **Completed:** Expand the event and venue domain with organizer ownership, lifecycle states, proposals, automatic venue allocation, availability, blackout dates, administrator approval, and shared scheduling constraints.
 3. **Completed for the current scope:** Add registrations, a personal calendar, organizer tasks, announcements, notifications, and attendance records.
 4. **Completed:** Implement event publication, student discovery, filtering, capacity-safe registration, cancellation, schedule-clash detection, and `My Events`.
 5. **Completed for the current scope:** Add reminders, announcements, secure QR attendance, participation histories, and initial analytics.
-6. **Completed for the current workflow:** Centralize schedule validation and use a transaction when venue approval creates a schedule.
+6. **Completed for the current workflow:** Automatically allocate a suitable venue transactionally after approval and reject capacity, overlap, blackout, weekend, and past-time conflicts.
 7. **Completed:** Implement and test the GA chromosome, fitness function, tournament selection, crossover, mutation, elitism, stopping conditions, and result persistence.
 8. **Completed for the current evaluation scope:** Compare manual and generated schedules; run reproducible seeded GA benchmarks; export date-filtered event, venue, and experiment evidence; and collect consented usability ratings.
 9. **Partially completed:** Automated feature and authorization coverage is in place. Complete production-like security/performance testing and conduct formal user acceptance with representative participants.

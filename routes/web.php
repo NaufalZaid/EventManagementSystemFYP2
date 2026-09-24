@@ -4,6 +4,7 @@ use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AttendanceCheckInController;
 use App\Http\Controllers\AttendanceHistoryController;
 use App\Http\Controllers\AttendanceSessionController;
+use App\Http\Controllers\AutomaticEventSchedulingController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -15,22 +16,18 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventDiscoveryController;
 use App\Http\Controllers\EventPlanningController;
 use App\Http\Controllers\EventProposalController;
-use App\Http\Controllers\EventPublicationController;
 use App\Http\Controllers\EventRegistrationController;
 use App\Http\Controllers\EventScheduleController;
 use App\Http\Controllers\EventTaskController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OptimizationExperimentController;
-use App\Http\Controllers\OptimizationRunController;
 use App\Http\Controllers\PersonalCommitmentController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SocietyController;
-use App\Http\Controllers\TimeslotController;
 use App\Http\Controllers\UserEvaluationController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\VenueBlackoutController;
 use App\Http\Controllers\VenueController;
-use App\Http\Controllers\VenueRequestController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
@@ -54,18 +51,15 @@ Route::middleware('auth')->group(function (): void {
     Route::get('evaluation', [UserEvaluationController::class, 'edit'])->name('evaluation.edit');
     Route::put('evaluation', [UserEvaluationController::class, 'update'])->name('evaluation.update');
 
-    Route::resource('events', EventController::class)
-        ->except('show')
-        ->middleware('role:organizer,administrator');
+    Route::get('events', [EventController::class, 'index'])
+        ->middleware('role:organizer,administrator')->name('events.index');
 
     Route::middleware('role:organizer')->group(function (): void {
+        Route::resource('events', EventController::class)->only(['create', 'store', 'edit', 'update', 'destroy']);
         Route::post('events/{event}/submit', [EventProposalController::class, 'submit'])->name('events.submit');
-        Route::get('venue-requests/create', [VenueRequestController::class, 'create'])->name('venue-requests.create');
-        Route::post('venue-requests', [VenueRequestController::class, 'store'])->name('venue-requests.store');
+        Route::get('events/{event}/allocate', [AutomaticEventSchedulingController::class, 'create'])->name('events.allocation.create');
+        Route::post('events/{event}/allocate', [AutomaticEventSchedulingController::class, 'store'])->name('events.allocation.store');
     });
-
-    Route::get('venue-requests', [VenueRequestController::class, 'index'])
-        ->middleware('role:organizer,administrator')->name('venue-requests.index');
 
     Route::middleware('role:organizer,administrator')->group(function (): void {
         Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
@@ -107,24 +101,14 @@ Route::middleware('auth')->group(function (): void {
         Route::get('experiments/{experiment}', [OptimizationExperimentController::class, 'show'])->name('experiments.show');
         Route::get('reports/experiments.csv', [ReportController::class, 'experimentsCsv'])->name('reports.experiments.csv');
         Route::get('evaluation-results', [UserEvaluationController::class, 'results'])->name('evaluation.results');
-        Route::get('optimizer', [OptimizationRunController::class, 'index'])->name('optimizer.index');
-        Route::post('optimizer', [OptimizationRunController::class, 'store'])->name('optimizer.store');
-        Route::get('optimizer/comparison', [OptimizationRunController::class, 'comparison'])->name('optimizer.comparison');
-        Route::get('optimizer/{run}', [OptimizationRunController::class, 'show'])->name('optimizer.show');
-        Route::post('optimizer/{run}/apply', [OptimizationRunController::class, 'apply'])->name('optimizer.apply');
         Route::get('proposals', [EventProposalController::class, 'index'])->name('proposals.index');
         Route::patch('proposals/{event}/approve', [EventProposalController::class, 'approve'])->name('proposals.approve');
         Route::patch('proposals/{event}/reject', [EventProposalController::class, 'reject'])->name('proposals.reject');
-        Route::patch('events/{event}/publish', [EventPublicationController::class, 'publish'])->name('events.publish');
-        Route::patch('events/{event}/unpublish', [EventPublicationController::class, 'unpublish'])->name('events.unpublish');
-        Route::patch('venue-requests/{venueRequest}/approve', [VenueRequestController::class, 'approve'])->name('venue-requests.approve');
-        Route::patch('venue-requests/{venueRequest}/reject', [VenueRequestController::class, 'reject'])->name('venue-requests.reject');
         Route::resource('venues', VenueController::class)->except('show');
         Route::resource('societies', SocietyController::class)->except('show');
         Route::get('venues/{venue}/blackouts', [VenueBlackoutController::class, 'index'])->name('venues.blackouts.index');
         Route::post('venues/{venue}/blackouts', [VenueBlackoutController::class, 'store'])->name('venues.blackouts.store');
         Route::delete('venues/{venue}/blackouts/{blackout}', [VenueBlackoutController::class, 'destroy'])->name('venues.blackouts.destroy');
-        Route::resource('timeslots', TimeslotController::class)->except('show');
-        Route::resource('schedules', EventScheduleController::class)->except('show');
+        Route::get('schedules', [EventScheduleController::class, 'index'])->name('schedules.index');
     });
 });
