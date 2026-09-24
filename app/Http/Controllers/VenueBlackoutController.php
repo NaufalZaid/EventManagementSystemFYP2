@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Venue;
 use App\Models\VenueBlackout;
+use App\Services\BlackoutReschedulingService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,6 +12,8 @@ use Illuminate\Validation\ValidationException;
 
 class VenueBlackoutController extends Controller
 {
+    public function __construct(private readonly BlackoutReschedulingService $rescheduling) {}
+
     public function index(Venue $venue)
     {
         $blackouts = $venue->blackouts()->orderBy('starts_at')->get();
@@ -60,7 +63,7 @@ class VenueBlackoutController extends Controller
         }
 
         $venues = $request->boolean('all_venues') ? Venue::all() : collect([$venue]);
-        DB::transaction(function () use ($venues, $startsAt, $endsAt, $validated): void {
+        $rescheduledCount = DB::transaction(function () use ($venues, $startsAt, $endsAt, $validated): int {
             foreach ($venues as $targetVenue) {
                 $targetVenue->blackouts()->create([
                     'starts_at' => $startsAt,
@@ -68,11 +71,17 @@ class VenueBlackoutController extends Controller
                     'reason' => $validated['reason'],
                 ]);
             }
+
+            return $this->rescheduling->reschedule($venues, $startsAt, $endsAt, $validated['reason']);
         });
 
         $message = $request->boolean('all_venues')
             ? 'Blackout added to all venues.'
             : 'Venue blackout period added.';
+        if ($rescheduledCount > 0) {
+            $message .= ' '.$rescheduledCount.' affected '.str('event')->plural($rescheduledCount)
+                .' automatically rescheduled; '.str('organizer notification')->plural($rescheduledCount).' sent.';
+        }
 
         return back()->with('success', $message);
     }

@@ -67,6 +67,7 @@ class GeneticScheduleOptimizer
                         : SchedulingTimePolicy::NORMAL_CLOSING_HOUR;
                     if (! $venue->is_active || $event->capacity > $venue->capacity
                         || ! $timeslot->slot_date->isWeekday()
+                        || $startsAt->lessThanOrEqualTo(now())
                         || $startsAt->minute !== 0 || $endsAt->minute !== 0
                         || $startsAt->hour < SchedulingTimePolicy::OPENING_HOUR
                         || $startsAt->hour >= $closingHour || $endsAt->hour > $closingHour

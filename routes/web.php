@@ -50,6 +50,9 @@ Route::middleware('auth')->group(function (): void {
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
     Route::get('evaluation', [UserEvaluationController::class, 'edit'])->name('evaluation.edit');
     Route::put('evaluation', [UserEvaluationController::class, 'update'])->name('evaluation.update');
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::patch('notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+    Route::get('notifications/{notification}', [NotificationController::class, 'read'])->name('notifications.read');
 
     Route::get('events', [EventController::class, 'index'])
         ->middleware('role:organizer,administrator')->name('events.index');
@@ -86,9 +89,6 @@ Route::middleware('auth')->group(function (): void {
         Route::delete('events/{event}/register', [EventRegistrationController::class, 'destroy'])->name('events.registration.destroy');
         Route::get('calendar', [CalendarController::class, 'index'])->name('calendar.index');
         Route::resource('commitments', PersonalCommitmentController::class)->only(['create', 'store', 'edit', 'update', 'destroy']);
-        Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
-        Route::patch('notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
-        Route::get('notifications/{notification}', [NotificationController::class, 'read'])->name('notifications.read');
         Route::get('attendance-history', AttendanceHistoryController::class)->name('attendance.history');
         Route::get('check-in/{token}', [AttendanceCheckInController::class, 'show'])->name('attendance.check-in.show');
         Route::post('check-in/{token}', [AttendanceCheckInController::class, 'store'])->name('attendance.check-in.store');

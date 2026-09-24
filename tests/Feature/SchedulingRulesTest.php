@@ -9,8 +9,10 @@ use App\Models\Timeslot;
 use App\Models\User;
 use App\Models\Venue;
 use App\Models\VenueBlackout;
+use App\Notifications\EventRescheduledNotification;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class SchedulingRulesTest extends TestCase
@@ -93,6 +95,71 @@ class SchedulingRulesTest extends TestCase
             'duration_minutes' => 120,
             'capacity' => 60,
         ])->assertForbidden();
+    }
+
+    public function test_blackout_automatically_reschedules_an_affected_event_and_notifies_its_organizer(): void
+    {
+        Notification::fake();
+
+        $administrator = User::factory()->administrator()->create();
+        $organizer = User::factory()->organizer()->create();
+        $date = today()->next(Carbon::MONDAY);
+        $event = $this->event($organizer, [
+            'status' => EventStatus::Published,
+            'capacity' => 60,
+            'duration_minutes' => 120,
+        ]);
+        $originalVenue = Venue::create(['name' => 'Original Hall', 'capacity' => 80, 'is_active' => true]);
+        Venue::create(['name' => 'Replacement Hall', 'capacity' => 80, 'is_active' => true]);
+        $originalSlot = Timeslot::create([
+            'slot_date' => $date,
+            'start_time' => '10:00',
+            'end_time' => '12:00',
+        ]);
+        $originalSchedule = EventSchedule::create([
+            'event_id' => $event->id,
+            'venue_id' => $originalVenue->id,
+            'timeslot_id' => $originalSlot->id,
+            'status' => 'generated',
+        ]);
+
+        $this->actingAs($administrator)->post(route('venues.blackouts.store', $originalVenue), [
+            'starts_on' => $date->toDateString(),
+            'start_time' => '10:00',
+            'ends_on' => $date->toDateString(),
+            'end_time' => '12:00',
+            'reason' => 'Emergency maintenance',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertStringContainsString('1 affected event', session('success'));
+
+        $replacement = EventSchedule::with(['timeslot', 'venue'])->where('event_id', $event->id)->sole();
+        $replacementStarts = Carbon::parse($replacement->timeslot->slot_date->toDateString().' '.$replacement->timeslot->start_time);
+        $replacementEnds = Carbon::parse($replacement->timeslot->slot_date->toDateString().' '.$replacement->timeslot->end_time);
+        $blackoutStarts = $date->copy()->setTime(10, 0);
+        $blackoutEnds = $date->copy()->setTime(12, 0);
+
+        $this->assertFalse(
+            $replacement->venue_id === $originalSchedule->venue_id
+            && $replacement->timeslot_id === $originalSchedule->timeslot_id
+        );
+        $this->assertFalse(
+            $replacement->venue_id === $originalVenue->id
+            && $replacementStarts->lt($blackoutEnds)
+            && $replacementEnds->gt($blackoutStarts)
+        );
+        Notification::assertSentTo(
+            $organizer,
+            EventRescheduledNotification::class,
+            function (EventRescheduledNotification $notification) use ($organizer, $originalVenue, $replacement): bool {
+                $data = $notification->toArray($organizer);
+
+                return $data['kind'] === 'event_rescheduled'
+                    && $data['old_schedule']['venue'] === $originalVenue->name
+                    && $data['new_schedule']['venue'] === $replacement->venue->name
+                    && str_contains($data['message'], 'Emergency maintenance');
+            }
+        );
     }
 
     private function allocate(User $organizer, Event $event, Carbon $date, string $start, int $duration, int $capacity)

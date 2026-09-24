@@ -26,6 +26,9 @@
 
             if (auth()->user()->hasRole('organizer', 'administrator')) {
                 $navigation[] = ['label' => 'Events', 'route' => 'events.index', 'pattern' => 'events.*'];
+                if (auth()->user()->hasRole('organizer')) {
+                    $navigation[] = ['label' => 'Notifications'.(auth()->user()->unreadNotifications()->count() ? ' ('.auth()->user()->unreadNotifications()->count().')' : ''), 'route' => 'notifications.index', 'pattern' => 'notifications.*'];
+                }
                 $navigation[] = ['label' => 'Analytics', 'route' => 'analytics.index', 'pattern' => 'analytics.*'];
                 $navigation[] = ['label' => 'Reports', 'route' => 'reports.index', 'pattern' => 'reports.*'];
             }
