@@ -1,5 +1,5 @@
 <x-layouts.app title="Event proposals">
-    <x-page-header title="Event proposals" description="Review organizer submissions before venue requests are allowed." />
+    <x-page-header title="Event proposals" description="Review event submissions awaiting an approval decision." />
     @if ($events->isEmpty())
         <x-empty-state title="No proposals to review" description="Submitted proposals will appear here." />
     @else

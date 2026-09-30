@@ -1,0 +1,117 @@
+@startuml
+title Updated Event Management System Use Case Diagram
+
+left to right direction
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam ArrowColor #64748B
+skinparam ActorBorderColor #0F172A
+skinparam ActorFontColor #0F172A
+skinparam UsecaseBorderColor #475569
+skinparam UsecaseBackgroundColor white
+skinparam UsecaseFontColor #0F172A
+skinparam RectangleBorderColor #334155
+skinparam RectangleFontColor #0F172A
+
+actor Student
+actor Organizer
+actor Administrator
+
+rectangle "Event Management System" {
+    package "Account and Shared Functions" {
+        usecase "Register student account" as UC_Register
+        usecase "Log in / log out" as UC_Authenticate
+        usecase "Reset password" as UC_ResetPassword
+        usecase "View notifications" as UC_Notifications
+        usecase "Submit system feedback" as UC_Feedback
+    }
+
+    package "Student Functions" {
+        usecase "Discover and search\npublished events" as UC_Discover
+        usecase "Register for or cancel\nevent participation" as UC_EventRegistration
+        usecase "Validate capacity and\ncalendar conflicts" as UC_RegistrationChecks
+        usecase "View personal calendar" as UC_Calendar
+        usecase "Manage personal\ncommitments" as UC_Commitments
+        usecase "Check in using QR code" as UC_QRCheckIn
+        usecase "View attendance history" as UC_AttendanceHistory
+    }
+
+    package "Organizer Functions" {
+        usecase "Create and edit\nevent proposal" as UC_ManageProposal
+        usecase "Submit proposal\nfor approval" as UC_SubmitProposal
+        usecase "Enter date, time,\nduration and capacity" as UC_Requirements
+        usecase "Validate scheduling\nconstraints" as UC_ValidateSchedule
+        usecase "Automatically allocate\nsuitable venue" as UC_AllocateVenue
+        usecase "Publish scheduled event" as UC_PublishEvent
+        usecase "View allocated\nevent schedule" as UC_ViewSchedule
+        usecase "Manage event tasks" as UC_Tasks
+        usecase "Publish participant\nannouncements" as UC_Announcements
+        usecase "Manage QR attendance sessions\nand manual check-in" as UC_ManageAttendance
+        usecase "View analytics and\noperational reports" as UC_OrganizerReports
+    }
+
+    package "Administrator Functions" {
+        usecase "Approve or reject\nevent proposal" as UC_ReviewProposal
+        usecase "Manage users and roles" as UC_Users
+        usecase "Manage societies" as UC_Societies
+        usecase "Manage venues" as UC_Venues
+        usecase "Manage venue\nblackout periods" as UC_Blackouts
+        usecase "Detect schedules affected\nby a new blackout" as UC_DetectConflicts
+        usecase "Reschedule affected events\nusing Genetic Algorithm" as UC_GAReschedule
+        usecase "Notify organizer of\nschedule changes" as UC_NotifyOrganizer
+        usecase "Review automatic\nallocations" as UC_ReviewAllocations
+        usecase "Run GA performance tests" as UC_GATests
+        usecase "Review evaluation results" as UC_EvaluationResults
+        usecase "View analytics and\noperational reports" as UC_AdminReports
+    }
+}
+
+Student -- UC_Register
+Student -- UC_Authenticate
+Student -- UC_ResetPassword
+Student -- UC_Notifications
+Student -- UC_Feedback
+Student -- UC_Discover
+Student -- UC_EventRegistration
+Student -- UC_Calendar
+Student -- UC_Commitments
+Student -- UC_QRCheckIn
+Student -- UC_AttendanceHistory
+
+Organizer -- UC_Authenticate
+Organizer -- UC_ResetPassword
+Organizer -- UC_Notifications
+Organizer -- UC_Feedback
+Organizer -- UC_ManageProposal
+Organizer -- UC_SubmitProposal
+Organizer -- UC_Requirements
+Organizer -- UC_ViewSchedule
+Organizer -- UC_Tasks
+Organizer -- UC_Announcements
+Organizer -- UC_ManageAttendance
+Organizer -- UC_OrganizerReports
+
+Administrator -- UC_Authenticate
+Administrator -- UC_ResetPassword
+Administrator -- UC_Feedback
+Administrator -- UC_ReviewProposal
+Administrator -- UC_Users
+Administrator -- UC_Societies
+Administrator -- UC_Venues
+Administrator -- UC_Blackouts
+Administrator -- UC_ReviewAllocations
+Administrator -- UC_GATests
+Administrator -- UC_EvaluationResults
+Administrator -- UC_AdminReports
+
+UC_EventRegistration ..> UC_RegistrationChecks : <<include>>
+UC_Requirements ..> UC_ValidateSchedule : <<include>>
+UC_Requirements ..> UC_AllocateVenue : <<include>>
+UC_AllocateVenue ..> UC_PublishEvent : <<include>>
+UC_Blackouts ..> UC_DetectConflicts : <<include>>
+UC_GAReschedule ..> UC_DetectConflicts : <<extend>>
+UC_GAReschedule ..> UC_NotifyOrganizer : <<include>>
+
+@enduml

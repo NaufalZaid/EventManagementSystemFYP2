@@ -1,7 +1,7 @@
 <x-layouts.guest title="Sign in">
     <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
         <h1 class="text-2xl font-bold tracking-tight text-slate-900">Welcome back</h1>
-        <p class="mt-2 text-sm text-slate-600">Sign in to access your role-specific workspace.</p>
+        <p class="mt-2 text-sm text-slate-600">Sign in to manage your events and activities.</p>
         <x-form-errors />
         <form method="POST" action="{{ route('login') }}" class="mt-7 space-y-5">
             @csrf
@@ -10,6 +10,6 @@
             <label class="flex items-center gap-2 text-sm text-slate-600"><input name="remember" type="checkbox" value="1" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">Remember me</label>
             <button class="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-200">Sign in</button>
         </form>
-        <p class="mt-6 text-center text-sm text-slate-600">New student? <a href="{{ route('register') }}" class="font-semibold text-indigo-600 hover:text-indigo-700">Create an account</a></p>
+        <p class="mt-6 text-center text-sm text-slate-600">New here? <a href="{{ route('register') }}" class="font-semibold text-indigo-600 hover:text-indigo-700">Create an account</a></p>
     </div>
 </x-layouts.guest>

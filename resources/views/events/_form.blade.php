@@ -21,7 +21,6 @@
             <label for="description" class="mb-2 block text-sm font-medium text-slate-700">Description</label>
             <textarea id="description" name="description" rows="5" class="block w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:ring-indigo-500" placeholder="Describe the event and its requirements.">{{ old('description', $event->description ?? '') }}</textarea>
         </div>
-        <div class="md:col-span-2 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-800"><strong>Proposal stage:</strong> submit the event idea for administrator approval first. After approval, you will enter the date, start time, duration, and expected attendance; the system will then allocate a venue automatically.</div>
     </div>
     <div class="flex flex-wrap justify-end gap-3 border-t border-slate-200 pt-5">
         <a href="{{ route('events.index') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</a>
